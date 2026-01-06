@@ -18,7 +18,7 @@ export default function Hero() {
         <div className="relative mx-auto max-w-6xl px-6 pt-36">
           <p className="text-sm font-medium text-white/70">
             Evolve your visual identity
-          </p>
+          </p> 
 
           <h1 className="mt-4 max-w-3xl text-5xl font-extrabold leading-[1.05] tracking-tight md:text-6xl">
             DOMINATE IN <span className="text-violet-400">STYLE</span>
