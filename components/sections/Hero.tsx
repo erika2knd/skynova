@@ -1,9 +1,11 @@
+import Image from "next/image";
+import type { ReactNode } from "react";
 export default function Hero() {
   return (
     <section className="relative">
       {/* Background */}
       <div
-        className="relative h-[680px] w-full overflow-hidden"
+        className="relative min-h-[680px] w-full overflow-hidden pb-24"
         style={{
           backgroundImage: "url(/images/hero.png)",
           backgroundSize: "cover",
@@ -11,58 +13,92 @@ export default function Hero() {
         }}
       >
         {/* Overlay gradient */}
-        <div className="absolute inset-0 bg-gradient-to-r from-[#0B0D12]/95 via-[#0B0D12]/55 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0B0D12] via-transparent to-[#0B0D12]/30" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#535EFE]/20 via-[#680BE2]/25 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0B0D12] via-transparent to-[#0B0D12]/20"/>
 
         {/* Content */}
         <div className="relative mx-auto max-w-6xl px-6 pt-36">
-          <p className="text-sm font-medium text-white/70">
-            Evolve your visual identity
-          </p> 
+          
 
           <h1 className="mt-4 max-w-3xl text-5xl font-extrabold leading-[1.05] tracking-tight md:text-6xl">
-            DOMINATE IN <span className="text-violet-400">STYLE</span>
+            DOMINATE IN STYLE
           </h1>
 
-          <p className="mt-5 max-w-xl text-base text-white/70 md:text-lg">
-            The ultimate marketplace for Counter-Strike skins. Discover
-            exclusive drops, track prices, and build your collection.
-          </p>
+          <div className="mt-6 flex flex-wrap items-center gap-4 md:flex-nowrap">
+            <span className="rounded-md bg-[#535EFE] px-4 py-2 text-base font-semibold leading-none text-white md:text-lg">
+              Evolve your visual identity
+            </span>
 
-          {/* Live feed */}
-          <div className="mt-10 w-full max-w-xl rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur">
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-semibold">Live feed</p>
-              <span className="text-xs text-white/50">Updated now</span>
-            </div>
-
-            <div className="mt-4 grid grid-cols-3 gap-3">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="rounded-xl border border-white/10 bg-white/5 px-3 py-3"
-                >
-                  <div className="h-8 rounded-lg bg-white/10" />
-                  <p className="mt-2 text-xs text-white/60">$ 59.99</p>
-                  <p className="text-[10px] text-white/40">AK-47</p>
-                </div>
-              ))}
-            </div>
+            <p className="text-base font-medium text-white/90 md:text-lg">
+              The ultimate marketplace for Counter-Strike skins
+            </p>
           </div>
+
+
+        {/* Live feed */}
+<div className="mt-10 w-full max-w-[600px] rounded-3xl border border-white/10 bg-[#222326] p-6 backdrop-blur-2xl">
+  {/* header */}
+  <div className="flex items-center justify-between">
+    <div className="flex items-center gap-3">
+      <Image src="/images/live.svg" alt="" width={20} height={20} />
+      <p className="text-base font-semibold text-white">Live feed</p>
+    </div>
+  </div>
+
+  {/* cards row */}
+  <div className="mt-5 flex gap-4 overflow-x-auto overflow-y-hidden pb-2 pr-2 snap-x snap-mandatory">
+    {[
+      { price: "$ 549 286.48", img: "/images/weapon.png" },
+      { price: "$ 549 286.48", img: "/images/weapon.png" },
+      { price: "$ 549 286.48", img: "/images/weapon.png" },
+      { price: "$ 549 286.48", img: "/images/weapon.png" },
+      { price: "$ 549 286.48", img: "/images/weapon.png" },
+      { price: "$ 549 286.48", img: "/images/weapon.png" },
+    ].map((item, idx) => (
+      <div
+        key={idx}
+        className="shrink-0 span-start animated-border rounded-2xl bg-gradient-to-r from-[#535EFE] via-[#680BE2] to-[#8E2BFF] p-[1px]"
+      >
+        <div className="relative h-[150px] w-[150px] rounded-2xl bg-[#222226] p-4">
+          <p className="text-sm font-semibold text-white/90">{item.price}</p>
+
+          <div className="mt-3 flex justify-center">
+            <img src={item.img} alt="" className="h-14 w-auto object-contain" />
+          </div>
+          <div className="absolute bottom-3 left-3 grid h-8 w-8 place-items-center">
+            <Image src="/images/arrow.svg" alt="" width={16} height={16} />
+          </div>
+        </div>
+      </div>
+    ))}
+  </div>
+</div>
+
+
 
           {/* Cards */}
           <div className="mt-10 grid gap-4 md:grid-cols-3">
             <FeatureCard
-              title="Explore over 1.2M skins"
-              subtitle="Browse the largest curated catalog."
+              icon="/images/telescope.svg"
+              title={
+                <>
+                Explore over <span className="text-[#535EFE]">1.2M</span>
+                <br />skins</>
+              }
             />
             <FeatureCard
-              title="Buy & sell with ease"
-              subtitle="Fast listings and smooth checkout."
+              icon="/images/refresh.svg"
+              title={
+                <>
+                Buy <span className="text-[#535EFE]">& sell</span> <br /> with ease </>
+              }
             />
             <FeatureCard
-              title="Find the best deals"
-              subtitle="Track prices and spot discounts."
+              icon="/images/diamond.svg"
+              title={
+                <>
+                Find the best <br /><span className="text-[#535EFE]">deals</span></>
+              }
             />
           </div>
         </div>
@@ -72,16 +108,26 @@ export default function Hero() {
 }
 
 function FeatureCard({
+  icon,
   title,
-  subtitle,
 }: {
-  title: string;
-  subtitle: string;
+  icon: string;
+  title: ReactNode;
 }) {
-  return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur transition hover:bg-white/10">
-      <p className="text-lg font-semibold">{title}</p>
-      <p className="mt-2 text-sm text-white/60">{subtitle}</p>
+   return (
+    <div className="group relative overflow-hidden rounded-2xl border border-white/10 bg-[#222326] p-6 backdrop-blur">
+      <div className="pointer-events-none absolute -top-20 -left-20 h-48 w-48 rounded-full bg-gradient-to-r from-[#535EFE] via-[#680BE2]/70 to-[#9553FE]/35 blur-3xl" />
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-black/0 via-black/0 to-black/20" />
+
+      <div className="relative z-10">
+        <div className="mb-6">
+          <Image src={icon} alt="" width={26} height={26} />
+        </div>
+
+        <p className="text-3xl font-extrabold leading-tight text-white">
+          {title}
+        </p>
+      </div>
     </div>
   );
 }
