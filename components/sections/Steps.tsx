@@ -25,7 +25,7 @@ const steps = [
 
 export default function Steps() {
   return (
-    <section className="relative overflow-hidden py-24">
+    <section className="relative overflow-hidden py-24 bg-[#1F1E20]">
       {/* background glow */}
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute -left-40 top-140 h-[520px] w-[520px] rounded-full bg-[#535EFE]/75 blur-[140px]" />
