@@ -1,6 +1,7 @@
 import Header from "@/components/layout/Header";
 import Hero from "@/components/sections/Hero";
 import ExploreSkins from "@/components/sections/ExploreSkins";
+import Steps from "@/components/sections/Steps";
 
 export default function Home() {
   return (
@@ -8,6 +9,7 @@ export default function Home() {
       <Header />
       <Hero />
       <ExploreSkins />
+      <Steps />
     </main>
   );
 }
