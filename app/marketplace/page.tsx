@@ -1,12 +1,50 @@
+"use client";
+
+import { useState } from "react";
+import Header from "@/components/layout/Header";
+import MarketplaceGrid from "@/components/sections/MarketplaceGrid";
+import Footer from "@/components/layout/Footer";
+import FilterDrawer from "@/components/filters/FilterDrawer";
+import type { Filters } from "@/components/filters/types";
+
 export default function MarketplacePage() {
+  const [filtersOpen, setFiltersOpen] = useState(false);
+
+  const defaultFilters: Filters = {
+    priceMin: "",
+    priceMax: "",
+    exterior: [],
+    statTrak: "any",
+  };
+
+  const [filters, setFilters] = useState<Filters>(defaultFilters);
+  const [draftFilters, setDraftFilters] = useState<Filters>(defaultFilters);
+
   return (
-    <main className="min-h-screen bg-[#222326] px-6 py-24 text-white">
-      <div className="mx-auto max-w-[1240px]">
-        <h1 className="text-4xl font-extrabold">Marketplace</h1>
-        <p className="mt-4 text-white/60">
-          Coming soon — here will be the full skins catalog with filters and search.
-        </p>
-      </div>
+    <main className="min-h-screen bg-[#222326] pt-28">
+      <Header />
+
+      <MarketplaceGrid
+        onOpenFilters={() => {
+          setDraftFilters(filters); 
+          setFiltersOpen(true);
+        }}
+        filters={filters}
+      />
+
+      <FilterDrawer
+        open={filtersOpen}
+        onClose={() => setFiltersOpen(false)}
+        draft={draftFilters}
+        onChange={setDraftFilters}
+        onReset={() => setDraftFilters(defaultFilters)}
+        onApply={() => {
+          setFilters(draftFilters); 
+          setFiltersOpen(false); 
+        }}
+      />
+
+      <Footer />
     </main>
   );
 }
