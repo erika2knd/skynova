@@ -2,6 +2,13 @@
 import Image from "next/image";
 import Link from "next/link";
 import {demoSkins, type Skin as DemoSkin} from "@/components/data/demoSkins";
+import WishlistIconButton from "../actions/WishlistIconButton";
+import { useSearchParams } from "next/navigation";
+
+
+const searchParams = useSearchParams();
+const currency = searchParams.get("currency") === "eur" ? "eur" : "usd";
+
 
 
 export default function ExploreSkins() {
@@ -16,11 +23,12 @@ export default function ExploreSkins() {
         {/* Grid row */}
         <div className="mt-14 relative">
           {/* Cards */}
-          <div className="flex gap-6 overflow-x-auto pb-2 pr[220px]">
+          <div className="flex gap-6 overflow-x-auto pb-2 pr-[220px]">
             {demoSkins.slice(0, 12).map((skin) => (
   <Link
     key={skin.id}
-    href={`/marketplace/${skin.slug}`}
+    href={`/marketplace/${skin.slug}${currency === "eur" ? "?currency=eur" : ""}`}
+
     className="shrink-0 block"
   >
     <SkinCard skin={skin} />
@@ -68,15 +76,7 @@ function SkinCard({ skin }: { skin: DemoSkin }) {
 
 
 
-            <button
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-              }}
-              className="text-white/60 transition hover:text-white"
-            >
-              ♡
-            </button>
+            <WishlistIconButton slug={skin.slug} />
           </div>
 
           <p className="mt-4 text-sm text-white/45">{skin.skin}</p>

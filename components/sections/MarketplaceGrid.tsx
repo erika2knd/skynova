@@ -2,9 +2,11 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 
 import { demoSkins, categories, type Skin } from "@/components/data/demoSkins";
+import WishlistIconButton from "../actions/WishlistIconButton";
+import SkeletonSkinCard from "../ui/SkeletonSkinCard";
 
 const sortOptions = ["Best deal", "Newest", "Price: low", "Price: high"];
 const currencyOptions = ["USD", "EUR"];
@@ -19,13 +21,47 @@ type Filters = {
 type MarketplaceGridProps = {
   onOpenFilters: () => void;
   filters: Filters;
+
+  activeCategory: string;
+  onCategoryChange: (next: string) => void;
+
+  sort: string;
+  onSortChange: (v: string) => void;
+
+  query: string;
+  onQueryChange: (v: string) => void;
+
+  currency: "usd" | "eur";
+  onCurrencyChange: (v: "usd" | "eur") => void;
 };
 
-export default function MarketplaceGrid({ onOpenFilters, filters }: MarketplaceGridProps) {
-  const [activeCategory, setActiveCategory] = useState(categories[0]);
-  const [sort, setSort] = useState(sortOptions[0]);
-  const [currency, setCurrency] = useState(currencyOptions[0]);
-  const [query, setQuery] = useState("");
+export default function MarketplaceGrid({
+  onOpenFilters,
+  filters,
+  activeCategory,
+  onCategoryChange,
+  sort,
+  onSortChange,
+  query,
+  onQueryChange,
+  currency,
+  onCurrencyChange,
+}: MarketplaceGridProps) {
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setLoading(true);
+    const t = setTimeout(() => setLoading(false), 500);
+    return () => clearTimeout(t);
+  }, [activeCategory, sort, filters, query, currency]);
+
+  // currency formatting (demo)
+  const rate = currency === "eur" ? 0.92 : 1;
+  const symbol = currency === "eur" ? "€" : "$";
+  const money = (v: number) => {
+    const converted = Math.round(v * rate);
+    return `${symbol}${converted.toLocaleString("en-US")}`;
+  };
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -79,7 +115,7 @@ export default function MarketplaceGrid({ onOpenFilters, filters }: MarketplaceG
               return (
                 <button
                   key={c}
-                  onClick={() => setActiveCategory(c)}
+                  onClick={() => onCategoryChange(c)}
                   className={`shrink-0 rounded-xl px-3 py-2 text-sm transition ${
                     active
                       ? "border border-[#535EFE]/30 bg-[#535EFE]/20 text-white"
@@ -102,15 +138,21 @@ export default function MarketplaceGrid({ onOpenFilters, filters }: MarketplaceG
             Filter
           </button>
 
-          <Select value={sort} onChange={setSort} options={sortOptions} />
-          <Select value={currency} onChange={setCurrency} options={currencyOptions} />
+          <Select value={sort} onChange={onSortChange} options={sortOptions} />
+
+          <Select
+  value={currency === "usd" ? "USD" : "EUR"}
+  onChange={(v) => onCurrencyChange(v === "EUR" ? "eur" : "usd")}
+  options={currencyOptions}
+/>
+
 
           {/* Search */}
           <div className="flex min-w-[220px] flex-1 items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2">
             <span className="text-white/40">⌕</span>
             <input
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={(e) => onQueryChange(e.target.value)}
               placeholder="Search"
               className="w-full bg-transparent text-sm text-white placeholder:text-white/35 outline-none"
             />
@@ -129,15 +171,17 @@ export default function MarketplaceGrid({ onOpenFilters, filters }: MarketplaceG
 
         {/* Grid */}
         <div className="mt-6 grid gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-          {filtered.map((skin) => (
-            <Link
-              key={skin.id}
-              href={`/marketplace/${skin.slug}`}
-              className="block cursor-pointer transition-transform hover:scale-[1.01]"
-            >
-              <SkinCard skin={skin} />
-            </Link>
-          ))}
+          {loading
+            ? Array.from({ length: 10 }).map((_, i) => <SkeletonSkinCard key={i} />)
+            : filtered.map((skin) => (
+                <Link
+                  key={skin.id}
+                  href={`/marketplace/${skin.slug}${currency === "eur" ? "?currency=eur" : ""}`}
+                  className="block cursor-pointer transition-transform hover:scale-[1.01]"
+                >
+                  <SkinCard skin={skin} money={money} />
+                </Link>
+              ))}
         </div>
 
         {/* Down button */}
@@ -169,7 +213,7 @@ export default function MarketplaceGrid({ onOpenFilters, filters }: MarketplaceG
   );
 }
 
-function SkinCard({ skin }: { skin: Skin }) {
+function SkinCard({ skin, money }: { skin: Skin; money: (v: number) => string }) {
   return (
     <div className="animated-border rounded-3xl bg-gradient-to-r from-[#535EFE] via-[#680BE2] to-[#535EFE] p-[1px]">
       <div className="rounded-3xl bg-[#1F2023] p-4">
@@ -182,7 +226,7 @@ function SkinCard({ skin }: { skin: Skin }) {
             <p className="text-xs font-semibold text-white/80">{skin.floatValue}</p>
           </div>
 
-          <p className="text-xs text-white/50">${skin.price.toLocaleString("en-US")}</p>
+          <p className="text-xs text-white/50">{money(skin.price)}</p>
         </div>
 
         {/* weapon image */}
@@ -206,20 +250,10 @@ function SkinCard({ skin }: { skin: Skin }) {
 
           <div className="mt-2 flex items-center justify-between">
             <p className="text-xs text-white/45">{skin.skin}</p>
-
-            <button
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-              }}
-              className="text-white/50 transition hover:text-white"
-            >
-              ♡
-            </button>
+            <WishlistIconButton slug={skin.slug} />
           </div>
 
-          <p className="mt-3 text-sm font-extrabold text-white">${skin.price.toLocaleString( "en-US")}</p>
-
+          <p className="mt-3 text-sm font-extrabold text-white">{money(skin.price)}</p>
           <p className="mt-1 text-xs font-semibold text-[#535EFE]">{skin.discount}%</p>
         </div>
       </div>

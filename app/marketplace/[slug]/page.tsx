@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { demoSkins } from "@/components/data/demoSkins";
 import ProductWishlistButton from "@/components/actions/ProductWishlistButton";
 import ProductAddToCartButton from "@/components/actions/ProductAddToCartButton";
+import WishlistIconButton from "@/components/actions/WishlistIconButton";
 
 function Chip({ children }: { children: React.ReactNode }) {
   return (
@@ -25,9 +26,12 @@ function StatRow({ label, value }: { label: string; value: React.ReactNode }) {
 
 export default async function ProductPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
+  searchParams?: Promise<{ currency?: string }>;
 }) {
+
   const { slug } = await params;
 
   const skin = demoSkins.find((s) => s.slug === slug);
@@ -35,6 +39,17 @@ export default async function ProductPage({
 
   const name = `${skin.weapon} | ${skin.skin}`;
   const similar = demoSkins.filter((s) => s.slug !== skin.slug).slice(0, 4);
+
+  const sp = (await searchParams) ?? {};
+const currency = sp.currency === "eur" ? "eur" : "usd";
+const rate = currency === "eur" ? 0.92 : 1;
+const symbol = currency === "eur" ? "€" : "$";
+
+const money = (v: number) => {
+  const converted = Math.round(v * rate);
+  return `${symbol}${converted.toLocaleString("en-US")}`;
+};
+
 
   return (
     
@@ -102,8 +117,9 @@ export default async function ProductPage({
                   <div>
                     <div className="text-sm text-white/60">Price</div>
                     <div className="mt-1 text-3xl font-extrabold text-white">
-                      ${skin.price.toLocaleString("en-US")}
-                    </div>
+  {money(skin.price)}
+</div>
+
                   </div>
 
                   <div className="text-right text-xs text-white/50">
@@ -146,7 +162,7 @@ export default async function ProductPage({
             {similar.map((item) => (
           <Link
   key={item.slug}
-  href={`/marketplace/${item.slug}`}
+  href={`/marketplace/${item.slug}${currency === "eur" ? "?currency=eur" : ""}`}
   className="group block transition-transform hover:scale-[1.01]"
 >
   <div className="animated-border rounded-2xl bg-gradient-to-r from-[#535EFE] via-[#680BE2] to-[#535EFE] p-[1px]">
@@ -155,6 +171,11 @@ export default async function ProductPage({
       <div className="pointer-events-none absolute inset-0 opacity-0 transition group-hover:opacity-100">
         <div className="absolute inset-0 bg-gradient-to-br from-purple-500/15 via-transparent to-indigo-500/15" />
       </div>
+
+       {/* wishlist */}
+  <div className="absolute right-3 top-3 z-10">
+    <WishlistIconButton slug={item.slug} />
+  </div>
 
       {/* content */}
       <div className="relative">
@@ -178,8 +199,9 @@ export default async function ProductPage({
 
         <div className="mt-2 flex items-center justify-between text-sm">
           <span className="text-white/80">
-            ${item.price.toLocaleString("en-US")}
-          </span>
+  {money(item.price)}
+</span>
+
           <span className="text-white/45">
             Float {item.floatValue}
           </span>

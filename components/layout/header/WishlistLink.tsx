@@ -5,12 +5,19 @@ import { useWishlist } from "@/context/wishlist-context";
 
 function HeartIcon() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
+    <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" className="block">
       <path
-        d="M12 21s-7.2-4.35-9.6-8.55C.6 9.6 2.1 6.6 5.4 6c1.8-.3 3.45.45 4.5 1.65C10.95 6.45 12.6 5.7 14.4 6c3.3.6 4.8 3.6 3 6.45C19.2 16.65 12 21 12 21z"
+        d="M12 20.35l-1.45-1.32C5.4 14.36 2 11.28 2 7.5
+           2 4.42 4.42 2 7.5 2
+           9.24 2 10.91 2.81 12 4.08
+           13.09 2.81 14.76 2 16.5 2
+           19.58 2 22 4.42 22 7.5
+           22 11.28 18.6 14.36 13.45 19.04
+           L12 20.35z"
         fill="none"
         stroke="currentColor"
         strokeWidth="1.6"
+        strokeLinejoin="round"
       />
     </svg>
   );

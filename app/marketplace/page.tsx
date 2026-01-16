@@ -1,33 +1,176 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+
 import MarketplaceGrid from "@/components/sections/MarketplaceGrid";
 import FilterDrawer from "@/components/filters/FilterDrawer";
 import type { Filters } from "@/components/filters/types";
+import { categories } from "@/components/data/demoSkins";
+
+import {
+  DEFAULT_FILTERS,
+  parseFiltersFromSearchParams,
+  writeFiltersToSearchParams,
+  parseCategoryFromSearchParams,
+  writeCategoryToSearchParams,
+  parseSortFromSearchParams,
+  writeSortToSearchParams,
+  parseQueryFromSearchParams,
+  writeQueryToSearchParams,
+  type SortKey,
+  parseCurrencyFromSearchParams,
+  writeCurrencyToSearchParams,
+  type CurrencyKey,
+
+} from "@/components/filters/url";
+
+const sortKeyToLabel: Record<SortKey, string> = {
+  best: "Best deal",
+  newest: "Newest",
+  price_low: "Price: low",
+  price_high: "Price: high",
+};
+
+const sortLabelToKey: Record<string, SortKey> = {
+  "Best deal": "best",
+  Newest: "newest",
+  "Price: low": "price_low",
+  "Price: high": "price_high",
+};
 
 export default function MarketplacePage() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
   const [filtersOpen, setFiltersOpen] = useState(false);
 
-  const defaultFilters: Filters = {
-    priceMin: "",
-    priceMax: "",
-    exterior: [],
-    statTrak: "any",
+  // --- URL -> state (filters)
+  const urlFilters = useMemo<Filters>(() => {
+    const sp = new URLSearchParams(searchParams.toString());
+    return parseFiltersFromSearchParams(sp);
+  }, [searchParams]);
+
+  // --- URL -> state (category)
+  const urlCategory = useMemo(() => {
+    const sp = new URLSearchParams(searchParams.toString());
+    const cat = parseCategoryFromSearchParams(sp);
+    return categories.includes(cat as any) ? cat : categories[0];
+  }, [searchParams]);
+
+  // --- URL -> state (sort label)
+  const urlSortLabel = useMemo(() => {
+    const sp = new URLSearchParams(searchParams.toString());
+    const sortKey = parseSortFromSearchParams(sp);
+    return sortKeyToLabel[sortKey];
+  }, [searchParams]);
+
+  // --- URL -> state (query)
+  const urlQuery = useMemo(() => {
+    const sp = new URLSearchParams(searchParams.toString());
+    return parseQueryFromSearchParams(sp);
+  }, [searchParams]);
+
+  // --- URL -> state (currency)
+  const urlCurrency = useMemo(() => {
+    const sp = new URLSearchParams(searchParams.toString());
+    return parseCurrencyFromSearchParams(sp);
+  }, [searchParams]);
+
+  const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
+  const [draftFilters, setDraftFilters] = useState<Filters>(DEFAULT_FILTERS);
+  const [activeCategory, setActiveCategory] = useState(categories[0]);
+  const [sort, setSort] = useState<string>("Best deal");
+
+  const [query, setQuery] = useState<string>("");
+  const [debouncedQuery, setDebouncedQuery] = useState<string>("");
+
+  const [currency, setCurrency] = useState<CurrencyKey>("usd");
+
+
+  // debounce for query input
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQuery(query), 300);
+    return () => clearTimeout(t);
+  }, [query]);
+
+  // sync: when URL changes -> update applied state
+  useEffect(() => {
+    setFilters(urlFilters);
+    setActiveCategory(urlCategory);
+    setSort(urlSortLabel);
+
+    setQuery(urlQuery);
+    setDebouncedQuery(urlQuery);
+
+    setCurrency(urlCurrency);
+  }, [urlFilters, urlCategory, urlSortLabel, urlQuery, urlCurrency]);
+
+  // category change -> write to URL
+  const onCategoryChange = (next: string) => {
+    setActiveCategory(next);
+
+    const sp = new URLSearchParams(searchParams.toString());
+    writeCategoryToSearchParams(sp, next);
+
+    const qs = sp.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
   };
 
-  const [filters, setFilters] = useState<Filters>(defaultFilters);
-  const [draftFilters, setDraftFilters] = useState<Filters>(defaultFilters);
+  // sort change -> write to URL
+  const onSortChange = (nextLabel: string) => {
+    setSort(nextLabel);
+
+    const nextKey = sortLabelToKey[nextLabel] ?? "best";
+
+    const sp = new URLSearchParams(searchParams.toString());
+    writeSortToSearchParams(sp, nextKey);
+
+    const qs = sp.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+  };
+
+  // currency change -> write to URL
+const onCurrencyChange = (next: CurrencyKey) => {
+  setCurrency(next);
+
+  const sp = new URLSearchParams(searchParams.toString());
+  writeCurrencyToSearchParams(sp, next);
+
+  const qs = sp.toString();
+  router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+};
+
+
+  // debounced query -> write to URL
+  useEffect(() => {
+    const sp = new URLSearchParams(searchParams.toString());
+    writeQueryToSearchParams(sp, debouncedQuery);
+
+    const qs = sp.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    // intentionally NOT depending on searchParams to avoid extra loops
+  }, [debouncedQuery, router, pathname]);
+
+
 
   return (
     <main className="min-h-screen bg-[#222326] pt-28">
-  
-
       <MarketplaceGrid
         onOpenFilters={() => {
-          setDraftFilters(filters); 
+          setDraftFilters(filters);
           setFiltersOpen(true);
         }}
         filters={filters}
+        activeCategory={activeCategory}
+        onCategoryChange={onCategoryChange}
+        sort={sort}
+        onSortChange={onSortChange}
+        query={query}
+        onQueryChange={setQuery}
+        currency={currency}
+        onCurrencyChange={onCurrencyChange}
       />
 
       <FilterDrawer
@@ -35,14 +178,20 @@ export default function MarketplacePage() {
         onClose={() => setFiltersOpen(false)}
         draft={draftFilters}
         onChange={setDraftFilters}
-        onReset={() => setDraftFilters(defaultFilters)}
+        onReset={() => setDraftFilters(DEFAULT_FILTERS)}
         onApply={() => {
-          setFilters(draftFilters); 
-          setFiltersOpen(false); 
+          setFilters(draftFilters);
+
+          const sp = new URLSearchParams(searchParams.toString());
+          writeFiltersToSearchParams(sp, draftFilters);
+
+          const qs = sp.toString();
+          router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+
+          setFiltersOpen(false);
         }}
       />
-
-   
     </main>
   );
 }
+
