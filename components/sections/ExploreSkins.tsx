@@ -1,53 +1,8 @@
+"use client";
 import Image from "next/image";
 import Link from "next/link";
+import {demoSkins, type Skin as DemoSkin} from "@/components/data/demoSkins";
 
-type Skin = {
-  id: string;
-  float: string;
-  priceUsd: string;
-  priceEth: string;
-  name: string;
-  collection: string;
-  discount: string;
-  image: string;
-};
-
-const skins: Skin[] = [
-  {
-    id: "1",
-    float: "0.133423",
-    priceEth: "0.133423",
-    priceUsd: "$ 589.62",
-    name: "StatTrak™ UMP-45",
-    collection: "Howl",
-    discount: "-51%",
-    image: "/images/weapon.png",
-  },
-  { ...same("2") },
-  { ...same("3") },
-  { ...same("4") },
-  { ...same("5") },
-  { ...same("6") },
-  { ...same("7") },
-  { ...same("8") },
-  { ...same("9") },
-  { ...same("10") },
-  { ...same("11") },
-  { ...same("12") },
-];
-
-function same(id: string): Skin {
-  return {
-    id,
-    float: "0.133423",
-    priceEth: "0.133423",
-    priceUsd: "$ 589.62",
-    name: "StatTrak™ UMP-45",
-    collection: "Howl",
-    discount: "-51%",
-    image: "/images/weapon.png",
-  };
-}
 
 export default function ExploreSkins() {
   return (
@@ -62,9 +17,15 @@ export default function ExploreSkins() {
         <div className="mt-14 relative">
           {/* Cards */}
           <div className="flex gap-6 overflow-x-auto pb-2 pr[220px]">
-            {skins.map((skin) => (
-              <SkinCard key={skin.id} skin={skin} />
-            ))}
+            {demoSkins.slice(0, 12).map((skin) => (
+  <Link
+    key={skin.id}
+    href={`/marketplace/${skin.slug}`}
+    className="shrink-0 block"
+  >
+    <SkinCard skin={skin} />
+  </Link>
+))}
           </div>
 
           {/* See all */}
@@ -75,59 +36,58 @@ export default function ExploreSkins() {
   );
 }
 
-function SkinCard({ skin }: { skin: Skin }) {
+function SkinCard({ skin }: { skin: DemoSkin }) {
   return (
     <div className="shrink-0">
-      {/* animated gradient border */}
       <div className="animated-border rounded-3xl bg-gradient-to-r from-[#535EFE] via-[#680BE2] to-[#8E2BFF] p-[1px]">
-        {/* card body */}
-        <div className="w-[260px] rounded-3xl bg-[#222226] p-6">
-          {/* top row */}
+        <div className=" w-[260px] rounded-3xl bg-[#222226] p-6 transition-colors duration-300 group-hover:bg-[#1F2023]">
           <div className="flex items-center justify-between text-xs text-white/60">
             <div className="flex items-center gap-3">
               <Image src="/images/fire.svg" alt="" width={18} height={18} />
-              <span className="text-white/80">{skin.float}</span>
+              <span className="text-white/80">{skin.floatValue}</span>
             </div>
-            <span className="text-white/70">{skin.priceUsd}</span>
+            <span className="text-white/70">${skin.price.toLocaleString("en-US")}</span>
           </div>
 
-          {/* image */}
           <div className="mt-8 flex justify-center">
             <Image
               src={skin.image}
-              alt={skin.name}
+              alt={`${skin.weapon} | ${skin.skin}`}
               width={220}
               height={90}
               className="h-[90px] w-auto object-contain"
             />
           </div>
 
-          {/* name + like */}
           <div className="mt-10 flex items-end justify-between">
             <p className="text-lg font-extrabold leading-[1.05] text-white">
-              {skin.name}
-              <br />
-              {skin.name}
-            </p>
+  {skin.weapon}
+  <br />
+  {skin.skin}
+</p>
 
-            <button className="text-white/60 transition hover:text-white">
+
+
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+              className="text-white/60 transition hover:text-white"
+            >
               ♡
             </button>
           </div>
 
-          {/* collection */}
-          <p className="mt-4 text-sm text-white/45">{skin.collection}</p>
-
-          {/* price */}
-          <p className="mt-2 text-xl font-extrabold text-white">{skin.priceEth}</p>
-
-          {/* discount */}
-          <p className="mt-2 text-sm font-semibold text-[#535EFE]">{skin.discount}</p>
+          <p className="mt-4 text-sm text-white/45">{skin.skin}</p>
+          <p className="mt-2 text-xl font-extrabold text-white">{skin.floatValue}</p>
+          <p className="mt-2 text-sm font-semibold text-[#535EFE]">{skin.discount}%</p>
         </div>
       </div>
     </div>
   );
 }
+
 
 
 function SeeAllOverlay() {

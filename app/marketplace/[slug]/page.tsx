@@ -35,6 +35,7 @@ export default async function ProductPage({
   const similar = demoSkins.filter((s) => s.slug !== skin.slug).slice(0, 4);
 
   return (
+    
     <main className="relative">
       {/* glow */}
       <div className="pointer-events-none absolute left-[-120px] top-[-120px] h-[420px] w-[420px] rounded-full bg-purple-600/30 blur-3xl" />
@@ -53,8 +54,8 @@ export default async function ProductPage({
         <section className="grid gap-6 lg:grid-cols-12">
           {/* left */}
           <div className="lg:col-span-7">
-            <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-white/5 backdrop-blur">
-              <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-purple-500/15 via-transparent to-indigo-500/10" />
+            <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-[#222326] backdrop-blur">
+              
 
               <div className="relative p-6 sm:p-8">
                 <div className="mb-4 flex flex-wrap gap-2">
@@ -85,7 +86,7 @@ export default async function ProductPage({
 
           {/* right */}
           <div className="lg:col-span-5">
-            <div className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur sm:p-8">
+            <div className="rounded-3xl border border-white/10 bg-[#222326] p-6 backdrop-blur sm:p-8">
               <h1 className="text-2xl font-extrabold tracking-tight text-white sm:text-3xl">
                 {name}
               </h1>
@@ -94,7 +95,7 @@ export default async function ProductPage({
                 The ultimate marketplace for Counter-Strike skins — buy and sell with ease.
               </p>
 
-              <div className="mt-6 rounded-2xl border border-white/10 bg-black/20 p-5">
+              <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-5">
                 <div className="flex items-end justify-between gap-4">
                   <div>
                     <div className="text-sm text-white/60">Price</div>
@@ -145,40 +146,50 @@ export default async function ProductPage({
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {similar.map((item) => (
-              <Link
-                key={item.slug}
-                href={`/marketplace/${item.slug}`}
-                className="group relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur transition hover:bg-white/8"
-              >
-                <div className="pointer-events-none absolute inset-0 opacity-0 transition group-hover:opacity-100">
-                  <div className="absolute inset-0 bg-gradient-to-br from-purple-500/15 via-transparent to-indigo-500/15" />
-                </div>
+          <Link
+  key={item.slug}
+  href={`/marketplace/${item.slug}`}
+  className="group block transition-transform hover:scale-[1.01]"
+>
+  <div className="animated-border rounded-2xl bg-gradient-to-r from-[#535EFE] via-[#680BE2] to-[#535EFE] p-[1px]">
+    <div className="relative overflow-hidden rounded-2xl bg-[#1F2023] p-4 backdrop-blur">
+      {/* glow on hover */}
+      <div className="pointer-events-none absolute inset-0 opacity-0 transition group-hover:opacity-100">
+        <div className="absolute inset-0 bg-gradient-to-br from-purple-500/15 via-transparent to-indigo-500/15" />
+      </div>
 
-                <div className="relative">
-                  <div className="mb-3 flex items-center gap-2">
-                    {item.statTrak && <Chip>StatTrak™</Chip>}
-                    <Chip>{item.exterior}</Chip>
-                  </div>
+      {/* content */}
+      <div className="relative">
+        <div className="mb-3 flex items-center gap-2">
+          {item.statTrak && <Chip>StatTrak™</Chip>}
+          <Chip>{item.exterior}</Chip>
+        </div>
 
-                  <div className="relative mx-auto aspect-[16/10] w-full">
-                    <Image
-                      src={item.image}
-                      alt={`${item.weapon} | ${item.skin}`}
-                      fill
-                      className="object-contain transition duration-300 group-hover:scale-[1.03]"
-                    />
-                  </div>
+        <div className="relative mx-auto aspect-[16/10] w-full">
+          <Image
+            src={item.image}
+            alt={`${item.weapon} | ${item.skin}`}
+            fill
+            className="object-contain transition duration-300 group-hover:scale-[1.03]"
+          />
+        </div>
 
-                  <div className="mt-4 text-sm font-semibold text-white">
-                    {item.weapon} | {item.skin}
-                  </div>
+        <div className="mt-4 text-sm font-semibold text-white">
+          {item.weapon} | {item.skin}
+        </div>
 
-                  <div className="mt-2 flex items-center justify-between text-sm">
-                    <span className="text-white/80">${item.price.toLocaleString("en-US")}</span>
-                    <span className="text-white/45">Float {item.floatValue}</span>
-                  </div>
-                </div>
-              </Link>
+        <div className="mt-2 flex items-center justify-between text-sm">
+          <span className="text-white/80">
+            ${item.price.toLocaleString("en-US")}
+          </span>
+          <span className="text-white/45">
+            Float {item.floatValue}
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+</Link>
             ))}
           </div>
         </section>

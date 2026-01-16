@@ -1,5 +1,7 @@
 import Image from "next/image";
 import type { ReactNode } from "react";
+import Link from "next/link";
+import { demoSkins } from "../data/demoSkins";
 export default function Hero() {
   return (
     <section className="relative">
@@ -46,31 +48,38 @@ export default function Hero() {
   </div>
 
   {/* cards row */}
-  <div className="mt-5 flex gap-4 overflow-x-auto overflow-y-hidden pb-2 pr-2 snap-x snap-mandatory">
-    {[
-      { price: "$ 549 286.48", img: "/images/weapon.png" },
-      { price: "$ 549 286.48", img: "/images/weapon.png" },
-      { price: "$ 549 286.48", img: "/images/weapon.png" },
-      { price: "$ 549 286.48", img: "/images/weapon.png" },
-      { price: "$ 549 286.48", img: "/images/weapon.png" },
-      { price: "$ 549 286.48", img: "/images/weapon.png" },
-    ].map((item, idx) => (
-      <div
-        key={idx}
-        className="shrink-0 span-start animated-border rounded-2xl bg-gradient-to-r from-[#535EFE] via-[#680BE2] to-[#8E2BFF] p-[1px]"
-      >
-        <div className="relative h-[150px] w-[150px] rounded-2xl bg-[#222226] p-4">
-          <p className="text-sm font-semibold text-white/90">{item.price}</p>
+  <div className="mt-6 flex gap-4 overflow-x-auto overflow-y-hidden pb-2 pr-2 snap-x snap-mandatory">
+    {demoSkins.slice(0, 6).map((skin) => (
+  <Link
+    key={skin.id}
+    href={`/marketplace/${skin.slug}`}
+  className="group shrink-0 snap-start"
+>
+  <div className="animated-border rounded-2xl bg-gradient-to-r from-[#535EFE] via-[#680BE2] to-[#8E2BFF] p-[1px]">
+    <div
+      className="
+        relative h-[150px] w-[150px] rounded-2xl bg-[#222226] p-4
+        transition-transform duration-300
+        group-hover:scale-[1.04]">
+        <p className="text-sm font-semibold text-white/90">
+          ${skin.price.toLocaleString("en-US")}
+        </p>
 
-          <div className="mt-3 flex justify-center">
-            <img src={item.img} alt="" className="h-14 w-auto object-contain" />
-          </div>
-          <div className="absolute bottom-3 left-3 grid h-8 w-8 place-items-center">
-            <Image src="/images/arrow.svg" alt="" width={16} height={16} />
-          </div>
+        <div className="mt-3 flex justify-center">
+          <img
+            src={skin.image}
+            alt=""
+            className="h-14 w-auto object-contain"
+          />
+        </div>
+
+        <div className="absolute bottom-3 left-3 grid h-8 w-8 place-items-center">
+          <Image src="/images/arrow.svg" alt="" width={16} height={16} />
         </div>
       </div>
-    ))}
+    </div>
+  </Link>
+))}
   </div>
 </div>
 

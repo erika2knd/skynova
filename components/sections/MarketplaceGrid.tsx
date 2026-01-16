@@ -69,8 +69,8 @@ export default function MarketplaceGrid({ onOpenFilters, filters }: MarketplaceG
   }, [query, activeCategory, sort, filters]);
 
   return (
-    <section className="pb-24">
-      <div className="mx-auto max-w-[1240px] px-6">
+    <section>
+      <div className="mx-auto max-w-[1240px] px-6 pb-12">
         {/* Top categories row */}
         <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 backdrop-blur">
           <div className="flex items-center gap-3 overflow-x-auto">
@@ -149,7 +149,7 @@ export default function MarketplaceGrid({ onOpenFilters, filters }: MarketplaceG
       </div>
 
       {/* FULL WIDTH BANNER */}
-      <div className="mt-14 overflow-hidden bg-white/5">
+      <div className="mt-10 overflow-hidden bg-white/5">
         <div className="relative h-[280px] w-full">
           <Image src="/images/reviews-bg.png" alt="" fill className="object-cover object-center" />
 

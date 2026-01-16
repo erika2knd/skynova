@@ -1,27 +1,26 @@
-import "./globals.css";
 import type { Metadata } from "next";
-import { Oxanium } from "next/font/google";
+import "./globals.css";
 
-const oxanium = Oxanium({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700", "800"],
-  display: "swap",
-});
+import Header from "@/components/layout/Header";
+import Footer from "@/components/layout/Footer";
 
 export const metadata: Metadata = {
-  title: "Skynova",
-  description: "Demo marketplace for Counter-Strike skins",
+  title: "Skins Marketplace",
+  description: "CS skins marketplace",
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className={oxanium.className}>{children}</body>
+      <body className="min-h-screen bg-[#0B0B0F] text-white">
+        <Header />
+
+        <main>{children}</main>
+
+        <Footer />
+      </body>
     </html>
   );
 }
+
 

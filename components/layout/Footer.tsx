@@ -5,7 +5,6 @@ const policyLinks = [
   { label: "Privacy Policy", href: "/privacy-policy" },
   { label: "Terms and Conditions", href: "/terms" },
   { label: "Cookies Policy", href: "/cookies" },
-  { label: "Disclaimers", href: "/disclaimers" },
 ];
 
 export default function Footer() {
@@ -34,7 +33,7 @@ export default function Footer() {
               </div>
 
               <p className="mt-10 text-sm font-semibold text-white/50">
-                Copyright © 2025 Skynova
+                Copyright © 2026 Skynova
               </p>
             </div>
 

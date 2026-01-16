@@ -1,9 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Header from "@/components/layout/Header";
 import MarketplaceGrid from "@/components/sections/MarketplaceGrid";
-import Footer from "@/components/layout/Footer";
 import FilterDrawer from "@/components/filters/FilterDrawer";
 import type { Filters } from "@/components/filters/types";
 
@@ -22,7 +20,7 @@ export default function MarketplacePage() {
 
   return (
     <main className="min-h-screen bg-[#222326] pt-28">
-      <Header />
+  
 
       <MarketplaceGrid
         onOpenFilters={() => {
@@ -44,7 +42,7 @@ export default function MarketplacePage() {
         }}
       />
 
-      <Footer />
+   
     </main>
   );
 }
