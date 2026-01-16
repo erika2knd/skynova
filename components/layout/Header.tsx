@@ -1,6 +1,9 @@
 import Link from "next/link";
 import Image from "next/image";
 
+import CartLink from "@/components/layout/header/CartLink";
+import WishlistLink from "@/components/layout/header/WishlistLink";
+
 const navItems = [
   { label: "Marketplace", href: "/marketplace" },
   { label: "FAQ", href: "/faq" },
@@ -27,11 +30,7 @@ export default function Header() {
           {/* Nav */}
           <nav className="hidden items-center gap-10 text-sm text-white/70 md:flex">
             {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="transition hover:text-white"
-              >
+              <Link key={item.href} href={item.href} className="transition hover:text-white">
                 {item.label}
               </Link>
             ))}
@@ -40,26 +39,15 @@ export default function Header() {
           {/* Actions */}
           <div className="flex items-center gap-4">
             <button className="hidden items-center gap-2 rounded-xl border border-white/10 bg-white/[0.06] px-4 py-2 text-sm text-white/80 backdrop-blur transition hover:bg-white/[0.10] md:inline-flex">
-              EN
-              <span className="text-white/60">▾</span>
+              EN <span className="text-white/60">▾</span>
             </button>
 
-            <Link
-              href="/cart"
-              className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.06] px-4 py-2 text-sm text-white/80 backdrop-blur transition hover:bg-white/[0.10]"
-            >
-              <Image
-                src="/images/cart.svg"
-                alt="Shopping bag"
-                width={20}
-                height={20}
-                priority
-              />
-            </Link>
+            <WishlistLink />
+            <CartLink />
 
             <Link
               href="/login"
-              className="px-3 py-2 text-sm text-white/80 transition hover:text-white rounded-xl border border-white/10 bg-white/[0.06] px-4 py-2 text-sm text-white/80 backdrop-blur transition hover:bg-white/[0.10] md:inline-flex"
+              className="rounded-xl border border-white/10 bg-white/[0.06] px-4 py-2 text-sm text-white/80 backdrop-blur transition hover:bg-white/[0.10] md:inline-flex"
             >
               Log in
             </Link>

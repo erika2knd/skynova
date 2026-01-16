@@ -2,35 +2,10 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 
-type CartItem = {
-  id: string;
-  slug: string;
-  name: string;
-  exterior: string;
-  price: number;
-  image: string;
-};
-
-const demoItems: CartItem[] = [
-  {
-    id: "1",
-    slug: "stattrak-ump-45-howl-1",
-    name: "StatTrak™ UMP-45 | Howl",
-    exterior: "Factory New",
-    price: 50000,
-    image: "/images/weapon.png",
-  },
-  {
-    id: "2",
-    slug: "ump-45-howl-2",
-    name: "UMP-45 | Howl",
-    exterior: "Field-Tested",
-    price: 65000,
-    image: "/images/weapon.png",
-  },
-];
+import { demoSkins } from "@/components/data/demoSkins";
+import { useCart } from "@/context/cart-context";
 
 function money(v: number) {
   return `$${v.toLocaleString("en-US")}`;
@@ -45,24 +20,34 @@ function Chip({ children }: { children: React.ReactNode }) {
 }
 
 export default function CartClient() {
-  const [items, setItems] = useState<CartItem[]>(demoItems);
+  const { lines, remove } = useCart();
 
-  const subtotal = useMemo(() => items.reduce((sum, i) => sum + i.price, 0), [items]);
-  const fee = useMemo(() => Math.round(subtotal * 0.02), [subtotal]); // demo fee 2%
+  const items = useMemo(() => {
+    const map = new Map(demoSkins.map((s) => [s.slug, s]));
+    return lines
+      .map((l) => {
+        const skin = map.get(l.slug);
+        if (!skin) return null;
+        return { skin, qty: l.qty };
+      })
+      .filter(Boolean) as { skin: (typeof demoSkins)[number]; qty: number }[];
+  }, [lines]);
+
+  const subtotal = useMemo(
+    () => items.reduce((sum, i) => sum + i.skin.price * i.qty, 0),
+    [items]
+  );
+  const fee = useMemo(() => Math.round(subtotal * 0.02), [subtotal]);
   const total = subtotal + fee;
-
-  const remove = (id: string) => setItems((prev) => prev.filter((i) => i.id !== id));
 
   return (
     <section className="grid gap-6 lg:grid-cols-12">
-      {/* LEFT: items */}
+      {/* LEFT */}
       <div className="lg:col-span-8">
         {items.length === 0 ? (
           <div className="rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur">
             <div className="text-xl font-extrabold text-white">Your cart is empty</div>
-            <p className="mt-2 text-sm text-white/70">
-              Go to the marketplace and add some skins.
-            </p>
+            <p className="mt-2 text-sm text-white/70">Go to the marketplace and add some skins.</p>
 
             <div className="mt-6">
               <Link
@@ -78,61 +63,60 @@ export default function CartClient() {
           </div>
         ) : (
           <div className="space-y-4">
-            {items.map((item) => (
-              <div
-                key={item.id}
-                className="rounded-3xl border border-white/10 bg-white/5 p-4 backdrop-blur sm:p-5"
-              >
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="relative h-[72px] w-[120px] overflow-hidden rounded-2xl border border-white/10 bg-black/20">
-                      <Image
-                        src={item.image}
-                        alt={item.name}
-                        fill
-                        className="object-contain p-2"
-                      />
-                    </div>
+            {items.map(({ skin, qty }) => {
+              const name = `${skin.weapon} | ${skin.skin}`;
+              const linePrice = skin.price * qty;
 
-                    <div>
-                      <Link
-                        href={`/marketplace/${item.slug}`}
-                        className="text-base font-extrabold text-white hover:text-white/90"
-                      >
-                        {item.name}
-                      </Link>
+              return (
+                <div
+                  key={skin.slug}
+                  className="rounded-3xl border border-white/10 bg-white/5 p-4 backdrop-blur sm:p-5"
+                >
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="relative h-[72px] w-[120px] overflow-hidden rounded-2xl border border-white/10 bg-black/20">
+                        <Image src={skin.image} alt={name} fill className="object-contain p-2" />
+                      </div>
 
-                      <div className="mt-2 flex flex-wrap items-center gap-2">
-                        <Chip>{item.exterior}</Chip>
-                        <Chip>Instant delivery</Chip>
+                      <div>
+                        <Link
+                          href={`/marketplace/${skin.slug}`}
+                          className="text-base font-extrabold text-white hover:text-white/90"
+                        >
+                          {name}
+                        </Link>
+
+                        <div className="mt-2 flex flex-wrap items-center gap-2">
+                          <Chip>{skin.exterior}</Chip>
+                          <Chip>Instant delivery</Chip>
+                          {qty > 1 ? <Chip>Qty {qty}</Chip> : null}
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  <div className="flex items-center justify-between gap-4 sm:justify-end">
-                    <div className="text-lg font-extrabold text-white">{money(item.price)}</div>
+                    <div className="flex items-center justify-between gap-4 sm:justify-end">
+                      <div className="text-lg font-extrabold text-white">{money(linePrice)}</div>
 
-                    <button
-                      onClick={() => remove(item.id)}
-                      className="rounded-2xl border border-white/12 bg-white/5 px-4 py-2 text-sm font-semibold text-white/80 transition hover:bg-white/10"
-                    >
-                      Remove
-                    </button>
+                      <button
+                        onClick={() => remove(skin.slug)}
+                        className="rounded-2xl border border-white/12 bg-white/5 px-4 py-2 text-sm font-semibold text-white/80 transition hover:bg-white/10"
+                      >
+                        Remove
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
 
-      {/* RIGHT: summary */}
+      {/* RIGHT */}
       <div className="lg:col-span-4">
         <div className="sticky top-24 rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur sm:p-8">
           <div className="text-xl font-extrabold text-white">Order summary</div>
-          <p className="mt-2 text-sm text-white/60">
-            Demo totals. Later we’ll connect real checkout.
-          </p>
+          <p className="mt-2 text-sm text-white/60">Demo totals. Later we’ll connect real checkout.</p>
 
           <div className="mt-6 space-y-3">
             <div className="flex items-center justify-between text-sm">

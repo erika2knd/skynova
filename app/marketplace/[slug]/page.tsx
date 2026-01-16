@@ -3,6 +3,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { demoSkins } from "@/components/data/demoSkins";
+import ProductWishlistButton from "@/components/actions/ProductWishlistButton";
+import ProductAddToCartButton from "@/components/actions/ProductAddToCartButton";
 
 function Chip({ children }: { children: React.ReactNode }) {
   return (
@@ -36,7 +38,7 @@ export default async function ProductPage({
 
   return (
     
-    <main className="relative">
+    <main className="relative mt-12">
       {/* glow */}
       <div className="pointer-events-none absolute left-[-120px] top-[-120px] h-[420px] w-[420px] rounded-full bg-purple-600/30 blur-3xl" />
       <div className="pointer-events-none absolute right-[-140px] top-[240px] h-[520px] w-[520px] rounded-full bg-indigo-500/25 blur-3xl" />
@@ -111,14 +113,10 @@ export default async function ProductPage({
                 </div>
 
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                  <button className="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-purple-500 to-indigo-500 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-purple-500/20 transition hover:brightness-110">
-                    Buy now
-                  </button>
+  <ProductAddToCartButton slug={skin.slug} />
+  <ProductWishlistButton slug={skin.slug} />
+</div>
 
-                  <button className="inline-flex items-center justify-center rounded-2xl border border-white/12 bg-white/5 px-5 py-3 text-sm font-semibold text-white/90 transition hover:bg-white/10">
-                    Add to wishlist
-                  </button>
-                </div>
               </div>
 
               <div className="mt-6 space-y-3">
