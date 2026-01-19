@@ -184,7 +184,7 @@ export default function MarketplaceClient() {
   }, [debouncedQuery, pathname, router, currentQs]);
 
   return (
-    <main className="min-h-screen bg-[#222326] pt-28">
+    <main className="min-h-screen pt-28 pb-16 md:pb-24">
       <MarketplaceGrid
         onOpenFilters={() => {
           setDraftFilters(filters);

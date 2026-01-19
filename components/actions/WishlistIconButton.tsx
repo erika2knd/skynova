@@ -4,13 +4,7 @@ import { useWishlist } from "@/context/wishlist-context";
 
 function HeartIcon({ active }: { active: boolean }) {
   return (
-     <svg
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      aria-hidden="true"
-      className="block"
-    >
+    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" className="block">
       <path
         d="M12 20.35l-1.45-1.32C5.4 14.36 2 11.28 2 7.5
            2 4.42 4.42 2 7.5 2
@@ -42,8 +36,9 @@ export default function WishlistIconButton({ slug }: { slug: string }) {
       }}
       aria-label={active ? "Remove from wishlist" : "Add to wishlist"}
       aria-pressed={active}
+      title={active ? "Remove from wishlist" : "Add to wishlist"}
       className={[
-        "inline-flex h-8 w-8 items-center justify-center rounded-full",
+        "inline-flex h-10 w-10 sm:h-8 sm:w-8 items-center justify-center rounded-full",
         "border border-white/10 bg-white/5 backdrop-blur",
         "transition hover:bg-white/10",
         active
@@ -55,3 +50,4 @@ export default function WishlistIconButton({ slug }: { slug: string }) {
     </button>
   );
 }
+

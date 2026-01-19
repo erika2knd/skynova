@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState, useEffect } from "react";
@@ -33,6 +34,7 @@ type MarketplaceGridProps = {
 
   currency: "usd" | "eur";
   onCurrencyChange: (v: "usd" | "eur") => void;
+
   view: "grid" | "list";
   onViewChange: (v: "grid" | "list") => void;
 };
@@ -49,8 +51,7 @@ export default function MarketplaceGrid({
   currency,
   onCurrencyChange,
   view,
-  onViewChange
-
+  onViewChange,
 }: MarketplaceGridProps) {
   const [loading, setLoading] = useState(true);
 
@@ -135,81 +136,122 @@ export default function MarketplaceGrid({
         </div>
 
         {/* Filter bar */}
-        <div className="mt-4 flex flex-wrap items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 backdrop-blur">
-          <button
-            onClick={onOpenFilters}
-            className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/85 transition hover:bg-white/10"
-          >
-            Filter
-          </button>
+        <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 backdrop-blur">
+          {/* MOBILE */}
+          <div className="grid gap-3 sm:hidden">
+            {/* row 1 */}
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={onOpenFilters}
+                className="h-12 rounded-xl border border-white/10 bg-white/5 px-4 text-sm text-white/85 transition hover:bg-white/10"
+              >
+                Filter
+              </button>
 
-          <Select value={sort} onChange={onSortChange} options={sortOptions} />
+              <Select
+                value={sort}
+                onChange={onSortChange}
+                options={sortOptions}
+                className="h-12 w-full"
+              />
+            </div>
 
-          <Select
-  value={currency === "usd" ? "USD" : "EUR"}
-  onChange={(v) => onCurrencyChange(v === "EUR" ? "eur" : "usd")}
-  options={currencyOptions}
-/>
+            {/* row 2 */}
+            <div className="grid grid-cols-2 gap-3">
+              <Select
+                value={currency === "usd" ? "USD" : "EUR"}
+                onChange={(v) => onCurrencyChange(v === "EUR" ? "eur" : "usd")}
+                options={currencyOptions}
+                className="h-12 w-full"
+              />
 
+              <div className="grid grid-cols-2 gap-3">
+                <ViewButton active={view === "grid"} onClick={() => onViewChange("grid")}>
+                  ▦
+                </ViewButton>
+                <ViewButton active={view === "list"} onClick={() => onViewChange("list")}>
+                  ≣
+                </ViewButton>
+              </div>
+            </div>
 
-          {/* Search */}
-          <div className="flex min-w-[220px] flex-1 items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2">
-            <span className="text-white/40">⌕</span>
-            <input
-              value={query}
-              onChange={(e) => onQueryChange(e.target.value)}
-              placeholder="Search"
-              className="w-full bg-transparent text-sm text-white placeholder:text-white/35 outline-none"
-            />
+            {/* row 3 */}
+            <SearchInput query={query} onChange={onQueryChange} />
           </div>
 
-          {/* View buttons */}
-          <div className="ml-auto flex items-center gap-2">
+          {/* DESKTOP / TABLET */}
+          <div className="hidden flex-wrap items-center gap-3 sm:flex">
             <button
-    type="button"
-    onClick={() => onViewChange("grid")}
-    aria-label="Grid view"
-    className={`grid h-10 w-10 place-items-center rounded-xl border border-white/10 transition
-      ${view === "grid" ? "bg-white/10 text-white" : "bg-white/5 text-white/70 hover:bg-white/10"}
-    `}
-  >
-    ▦
-  </button>
+              onClick={onOpenFilters}
+              className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/85 transition hover:bg-white/10"
+            >
+              Filter
+            </button>
 
-  <button
-    type="button"
-    onClick={() => onViewChange("list")}
-    aria-label="List view"
-    className={`grid h-10 w-10 place-items-center rounded-xl border border-white/10 transition
-      ${view === "list" ? "bg-white/10 text-white" : "bg-white/5 text-white/70 hover:bg-white/10"}
-    `}
-  >
-    ≣
-  </button>
+            <Select value={sort} onChange={onSortChange} options={sortOptions} />
+
+            <Select
+              value={currency === "usd" ? "USD" : "EUR"}
+              onChange={(v) => onCurrencyChange(v === "EUR" ? "eur" : "usd")}
+              options={currencyOptions}
+            />
+
+            <div className="flex min-w-[220px] flex-1 items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2">
+              <span className="text-white/40">⌕</span>
+              <input
+                value={query}
+                onChange={(e) => onQueryChange(e.target.value)}
+                placeholder="Search"
+                className="w-full bg-transparent text-sm text-white placeholder:text-white/35 outline-none"
+              />
+            </div>
+
+            <div className="ml-auto flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => onViewChange("grid")}
+                aria-label="Grid view"
+                className={`grid h-10 w-10 place-items-center rounded-xl border border-white/10 transition
+                  ${view === "grid" ? "bg-white/10 text-white" : "bg-white/5 text-white/70 hover:bg-white/10"}
+                `}
+              >
+                ▦
+              </button>
+
+              <button
+                type="button"
+                onClick={() => onViewChange("list")}
+                aria-label="List view"
+                className={`grid h-10 w-10 place-items-center rounded-xl border border-white/10 transition
+                  ${view === "list" ? "bg-white/10 text-white" : "bg-white/5 text-white/70 hover:bg-white/10"}
+                `}
+              >
+                ≣
+              </button>
+            </div>
           </div>
         </div>
 
         {/* Grid */}
         <div
-  className={`mt-6 grid gap-5 ${
-    view === "grid"
-      ? "sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
-      : "grid-cols-1"
-  }`}
->
-  {loading
-    ? Array.from({ length: 10 }).map((_, i) => <SkeletonSkinCard key={i} />)
-    : filtered.map((skin) => (
-        <Link
-          key={skin.id}
-          href={`/marketplace/${skin.slug}`}
-          className="block cursor-pointer transition-transform hover:scale-[1.01]"
+          className={`mt-6 grid gap-5 ${
+            view === "grid"
+              ? "sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
+              : "grid-cols-1"
+          }`}
         >
-          <SkinCard skin={skin} money={money} view={view} />
-        </Link>
-      ))}
-</div>
-
+          {loading
+            ? Array.from({ length: 10 }).map((_, i) => <SkeletonSkinCard key={i} />)
+            : filtered.map((skin) => (
+                <Link
+                  key={skin.id}
+                  href={`/marketplace/${skin.slug}`}
+                  className="block cursor-pointer transition-transform hover:scale-[1.01]"
+                >
+                  <SkinCard skin={skin} money={money} view={view} />
+                </Link>
+              ))}
+        </div>
 
         {/* Down button */}
         <div className="mt-10 flex justify-center">
@@ -239,6 +281,8 @@ export default function MarketplaceGrid({
     </section>
   );
 }
+
+/* ----------------- Cards ----------------- */
 
 function SkinCard({
   skin,
@@ -341,23 +385,67 @@ function SkinCard({
   );
 }
 
+/* ----------------- UI helpers ----------------- */
 
+function ViewButton({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`grid h-12 w-full place-items-center rounded-xl border border-white/10 transition
+        ${active ? "bg-white/10 text-white" : "bg-white/5 text-white/70 hover:bg-white/10"}
+      `}
+    >
+      {children}
+    </button>
+  );
+}
+
+function SearchInput({
+  query,
+  onChange,
+}: {
+  query: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <div className="flex h-12 items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3">
+      <span className="text-white/40">⌕</span>
+      <input
+        value={query}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="Search"
+        className="w-full bg-transparent text-sm text-white placeholder:text-white/35 outline-none"
+      />
+    </div>
+  );
+}
 
 function Select({
   value,
   onChange,
   options,
+  className = "",
 }: {
   value: string;
   onChange: (v: string) => void;
   options: string[];
+  className?: string;
 }) {
   return (
-    <div className="relative">
+    <div className={`relative ${className}`}>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="appearance-none rounded-xl border border-white/10 bg-white/5 px-4 py-2 pr-9 text-sm text-white/85 outline-none transition hover:bg-white/10"
+        className="h-full w-full appearance-none rounded-xl border border-white/10 bg-white/5 px-4 py-2 pr-9 text-sm text-white/85 outline-none transition hover:bg-white/10"
       >
         {options.map((o) => (
           <option key={o} value={o} className="bg-[#222326]">

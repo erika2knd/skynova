@@ -8,8 +8,14 @@ export default function ProductAddToCartButton({ slug }: { slug: string }) {
   return (
     <button
       type="button"
-      onClick={() => add(slug, 1)}
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        add(slug, 1);
+      }}
       className="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-purple-500 to-indigo-500 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-purple-500/20 transition hover:brightness-110"
+      aria-label="Add to cart"
+      title="Add to cart"
     >
       Add to cart
     </button>

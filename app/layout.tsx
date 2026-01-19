@@ -13,15 +13,17 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className="min-h-screen bg-[#0B0B0F] text-white">
+      <body
+        className="min-h-screen bg-[#0B0B0F] text-white"
+        suppressHydrationWarning
+      >
         <Providers>
           <Header />
-          <main>{children}</main>
+          <main id="main-content">{children}</main>
           <Footer />
         </Providers>
       </body>
     </html>
   );
 }
-
 
