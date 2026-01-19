@@ -46,45 +46,47 @@ export default function MarketplaceClient() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
+  const currentQs = searchParams.toString();
+
   const [filtersOpen, setFiltersOpen] = useState(false);
 
   // --- URL -> state (filters)
   const urlFilters = useMemo<Filters>(() => {
-    const sp = new URLSearchParams(searchParams.toString());
+    const sp = new URLSearchParams(currentQs);
     return parseFiltersFromSearchParams(sp);
-  }, [searchParams]);
+  }, [currentQs]);
 
   // --- URL -> state (category)
   const urlCategory = useMemo(() => {
-    const sp = new URLSearchParams(searchParams.toString());
+    const sp = new URLSearchParams(currentQs);
     const cat = parseCategoryFromSearchParams(sp);
     return categories.includes(cat as any) ? cat : categories[0];
-  }, [searchParams]);
+  }, [currentQs]);
 
   // --- URL -> state (sort label)
   const urlSortLabel = useMemo(() => {
-    const sp = new URLSearchParams(searchParams.toString());
+    const sp = new URLSearchParams(currentQs);
     const sortKey = parseSortFromSearchParams(sp);
     return sortKeyToLabel[sortKey];
-  }, [searchParams]);
+  }, [currentQs]);
 
   // --- URL -> state (query)
   const urlQuery = useMemo(() => {
-    const sp = new URLSearchParams(searchParams.toString());
+    const sp = new URLSearchParams(currentQs);
     return parseQueryFromSearchParams(sp);
-  }, [searchParams]);
+  }, [currentQs]);
 
   // --- URL -> state (currency)
   const urlCurrency = useMemo(() => {
-    const sp = new URLSearchParams(searchParams.toString());
+    const sp = new URLSearchParams(currentQs);
     return parseCurrencyFromSearchParams(sp);
-  }, [searchParams]);
+  }, [currentQs]);
 
   // --- URL -> state (view)
   const urlView = useMemo(() => {
-    const sp = new URLSearchParams(searchParams.toString());
+    const sp = new URLSearchParams(currentQs);
     return parseViewFromSearchParams(sp);
-  }, [searchParams]);
+  }, [currentQs]);
 
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
   const [draftFilters, setDraftFilters] = useState<Filters>(DEFAULT_FILTERS);
@@ -120,11 +122,13 @@ export default function MarketplaceClient() {
   const onCategoryChange = (next: string) => {
     setActiveCategory(next);
 
-    const sp = new URLSearchParams(searchParams.toString());
+    const sp = new URLSearchParams(currentQs);
     writeCategoryToSearchParams(sp, next);
 
-    const qs = sp.toString();
-    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    const nextQs = sp.toString();
+    if (nextQs === currentQs) return;
+
+    router.replace(nextQs ? `${pathname}?${nextQs}` : pathname, { scroll: false });
   };
 
   // sort change -> write to URL
@@ -133,43 +137,51 @@ export default function MarketplaceClient() {
 
     const nextKey = sortLabelToKey[nextLabel] ?? "best";
 
-    const sp = new URLSearchParams(searchParams.toString());
+    const sp = new URLSearchParams(currentQs);
     writeSortToSearchParams(sp, nextKey);
 
-    const qs = sp.toString();
-    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    const nextQs = sp.toString();
+    if (nextQs === currentQs) return;
+
+    router.replace(nextQs ? `${pathname}?${nextQs}` : pathname, { scroll: false });
   };
 
   // currency change -> write to URL
   const onCurrencyChange = (next: CurrencyKey) => {
     setCurrency(next);
 
-    const sp = new URLSearchParams(searchParams.toString());
+    const sp = new URLSearchParams(currentQs);
     writeCurrencyToSearchParams(sp, next);
 
-    const qs = sp.toString();
-    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    const nextQs = sp.toString();
+    if (nextQs === currentQs) return;
+
+    router.replace(nextQs ? `${pathname}?${nextQs}` : pathname, { scroll: false });
   };
 
   // view change -> write to URL
   const onViewChange = (next: ViewKey) => {
     setView(next);
 
-    const sp = new URLSearchParams(searchParams.toString());
+    const sp = new URLSearchParams(currentQs);
     writeViewToSearchParams(sp, next);
 
-    const qs = sp.toString();
-    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    const nextQs = sp.toString();
+    if (nextQs === currentQs) return;
+
+    router.replace(nextQs ? `${pathname}?${nextQs}` : pathname, { scroll: false });
   };
 
   // debounced query -> write to URL
   useEffect(() => {
-    const sp = new URLSearchParams(searchParams.toString());
+    const sp = new URLSearchParams(currentQs);
     writeQueryToSearchParams(sp, debouncedQuery);
 
-    const qs = sp.toString();
-    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
-  }, [debouncedQuery, router, pathname, searchParams]);
+    const nextQs = sp.toString();
+    if (nextQs === currentQs) return; 
+
+    router.replace(nextQs ? `${pathname}?${nextQs}` : pathname, { scroll: false });
+  }, [debouncedQuery, pathname, router, currentQs]);
 
   return (
     <main className="min-h-screen bg-[#222326] pt-28">
@@ -200,11 +212,13 @@ export default function MarketplaceClient() {
         onApply={() => {
           setFilters(draftFilters);
 
-          const sp = new URLSearchParams(searchParams.toString());
+          const sp = new URLSearchParams(currentQs);
           writeFiltersToSearchParams(sp, draftFilters);
 
-          const qs = sp.toString();
-          router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+          const nextQs = sp.toString();
+          if (nextQs !== currentQs) {
+            router.replace(nextQs ? `${pathname}?${nextQs}` : pathname, { scroll: false });
+          }
 
           setFiltersOpen(false);
         }}
