@@ -2,15 +2,11 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 
 import { demoSkins, type Skin as DemoSkin } from "@/components/data/demoSkins";
 import WishlistIconButton from "../actions/WishlistIconButton";
 
-export default function ExploreSkins() {
-  const searchParams = useSearchParams();
-  const currency = searchParams.get("currency") === "eur" ? "eur" : "usd";
-
+export default function ExploreSkins({ currency }: { currency: "usd" | "eur" }) {
   return (
     <section className="py-20">
       <div className="mx-auto max-w-[1240px] px-6">
@@ -22,23 +18,27 @@ export default function ExploreSkins() {
           <div className="flex gap-6 overflow-x-auto pb-2 pr-[220px]">
             {demoSkins.slice(0, 12).map((skin) => (
               <Link
-                key={skin.id}
-                href={`/marketplace/${skin.slug}${currency === "eur" ? "?currency=eur" : ""}`}
-                className="shrink-0 block"
-              >
-                <SkinCard skin={skin} />
+  key={skin.id}
+  href={`/marketplace/${skin.slug}${currency === "eur" ? "?currency=eur" : ""}`}
+  className="shrink-0 block group"
+>
+                <SkinCard skin={skin} currency={currency} />
               </Link>
             ))}
           </div>
 
-          <SeeAllOverlay />
+          <SeeAllOverlay currency={currency} />
         </div>
       </div>
     </section>
   );
 }
 
-function SkinCard({ skin }: { skin: DemoSkin }) {
+function SkinCard({ skin, currency }: { skin: DemoSkin; currency: "usd" | "eur" }) {
+  const rate = currency === "eur" ? 0.92 : 1;
+  const symbol = currency === "eur" ? "€" : "$";
+  const money = (v: number) => `${symbol}${Math.round(v * rate).toLocaleString("en-US")}`;
+
   return (
     <div className="shrink-0">
       <div className="animated-border rounded-3xl bg-gradient-to-r from-[#535EFE] via-[#680BE2] to-[#8E2BFF] p-[1px]">
@@ -48,7 +48,7 @@ function SkinCard({ skin }: { skin: DemoSkin }) {
               <Image src="/images/fire.svg" alt="" width={18} height={18} />
               <span className="text-white/80">{skin.floatValue}</span>
             </div>
-            <span className="text-white/70">${skin.price.toLocaleString("en-US")}</span>
+            <span className="text-white/70">{money(skin.price)}</span>
           </div>
 
           <div className="mt-8 flex justify-center">
@@ -67,7 +67,6 @@ function SkinCard({ skin }: { skin: DemoSkin }) {
               <br />
               {skin.skin}
             </p>
-
             <WishlistIconButton slug={skin.slug} />
           </div>
 
@@ -80,7 +79,7 @@ function SkinCard({ skin }: { skin: DemoSkin }) {
   );
 }
 
-function SeeAllOverlay() {
+function SeeAllOverlay({ currency }: { currency: "usd" | "eur" }) {
   return (
     <div className="pointer-events-none absolute right-0 top-0 h-[420px] w-[180px]">
       <div className="absolute inset-0 bg-gradient-to-l from-[#26272D] via-[#26272D]/100 to-transparent" />
@@ -94,7 +93,7 @@ function SeeAllOverlay() {
 
       <div className="pointer-events-auto relative z-10 flex h-full -translate-y-2 flex-col items-center justify-center gap-4">
         <Link
-          href="/marketplace"
+          href={currency === "eur" ? "/marketplace?currency=eur" : "/marketplace"}
           className="grid h-20 w-20 place-items-center rounded-full border-2 border-[#535EFE]/70 text-[#535EFE] transition transform hover:scale-105"
           aria-label="See all skins"
         >
@@ -106,6 +105,5 @@ function SeeAllOverlay() {
     </div>
   );
 }
-
 
 
