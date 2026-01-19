@@ -33,6 +33,8 @@ type MarketplaceGridProps = {
 
   currency: "usd" | "eur";
   onCurrencyChange: (v: "usd" | "eur") => void;
+  view: "grid" | "list";
+  onViewChange: (v: "grid" | "list") => void;
 };
 
 export default function MarketplaceGrid({
@@ -46,6 +48,9 @@ export default function MarketplaceGrid({
   onQueryChange,
   currency,
   onCurrencyChange,
+  view,
+  onViewChange
+
 }: MarketplaceGridProps) {
   const [loading, setLoading] = useState(true);
 
@@ -160,29 +165,51 @@ export default function MarketplaceGrid({
 
           {/* View buttons */}
           <div className="ml-auto flex items-center gap-2">
-            <button className="grid h-10 w-10 place-items-center rounded-xl border border-white/10 bg-white/5 text-white/70 transition hover:bg-white/10">
-              ▦
-            </button>
-            <button className="grid h-10 w-10 place-items-center rounded-xl border border-white/10 bg-white/5 text-white/70 transition hover:bg-white/10">
-              ≣
-            </button>
+            <button
+    type="button"
+    onClick={() => onViewChange("grid")}
+    aria-label="Grid view"
+    className={`grid h-10 w-10 place-items-center rounded-xl border border-white/10 transition
+      ${view === "grid" ? "bg-white/10 text-white" : "bg-white/5 text-white/70 hover:bg-white/10"}
+    `}
+  >
+    ▦
+  </button>
+
+  <button
+    type="button"
+    onClick={() => onViewChange("list")}
+    aria-label="List view"
+    className={`grid h-10 w-10 place-items-center rounded-xl border border-white/10 transition
+      ${view === "list" ? "bg-white/10 text-white" : "bg-white/5 text-white/70 hover:bg-white/10"}
+    `}
+  >
+    ≣
+  </button>
           </div>
         </div>
 
         {/* Grid */}
-        <div className="mt-6 grid gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-          {loading
-            ? Array.from({ length: 10 }).map((_, i) => <SkeletonSkinCard key={i} />)
-            : filtered.map((skin) => (
-                <Link
-                  key={skin.id}
-                  href={`/marketplace/${skin.slug}${currency === "eur" ? "?currency=eur" : ""}`}
-                  className="block cursor-pointer transition-transform hover:scale-[1.01]"
-                >
-                  <SkinCard skin={skin} money={money} />
-                </Link>
-              ))}
-        </div>
+        <div
+  className={`mt-6 grid gap-5 ${
+    view === "grid"
+      ? "sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
+      : "grid-cols-1"
+  }`}
+>
+  {loading
+    ? Array.from({ length: 10 }).map((_, i) => <SkeletonSkinCard key={i} />)
+    : filtered.map((skin) => (
+        <Link
+          key={skin.id}
+          href={`/marketplace/${skin.slug}`}
+          className="block cursor-pointer transition-transform hover:scale-[1.01]"
+        >
+          <SkinCard skin={skin} money={money} view={view} />
+        </Link>
+      ))}
+</div>
+
 
         {/* Down button */}
         <div className="mt-10 flex justify-center">
@@ -213,53 +240,108 @@ export default function MarketplaceGrid({
   );
 }
 
-function SkinCard({ skin, money }: { skin: Skin; money: (v: number) => string }) {
+function SkinCard({
+  skin,
+  money,
+  view,
+}: {
+  skin: Skin;
+  money: (v: number) => string;
+  view: "grid" | "list";
+}) {
   return (
     <div className="animated-border rounded-3xl bg-gradient-to-r from-[#535EFE] via-[#680BE2] to-[#535EFE] p-[1px]">
-      <div className="rounded-3xl bg-[#1F2023] p-4">
-        {/* top row */}
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-2">
-            <div className="grid h-8 w-8 place-items-center">
-              <Image src={skin.icon} alt="" width={16} height={16} />
+      <div className={`rounded-3xl bg-[#1F2023] p-4 ${view === "list" ? "sm:p-5" : ""}`}>
+        {view === "grid" ? (
+          <>
+            {/* GRID */}
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-2">
+                <div className="grid h-8 w-8 place-items-center">
+                  <Image src={skin.icon} alt="" width={16} height={16} />
+                </div>
+                <p className="text-xs font-semibold text-white/80">{skin.floatValue}</p>
+              </div>
+
+              <p className="text-xs text-white/50">{money(skin.price)}</p>
             </div>
-            <p className="text-xs font-semibold text-white/80">{skin.floatValue}</p>
-          </div>
 
-          <p className="text-xs text-white/50">{money(skin.price)}</p>
-        </div>
+            <div className="mt-6 flex justify-center">
+              <Image
+                src={skin.image}
+                alt=""
+                width={220}
+                height={120}
+                className="h-[70px] w-auto object-contain"
+              />
+            </div>
 
-        {/* weapon image */}
-        <div className="mt-6 flex justify-center">
-          <Image
-            src={skin.image}
-            alt=""
-            width={220}
-            height={120}
-            className="h-[70px] w-auto object-contain"
-          />
-        </div>
+            <div className="mt-6">
+              <p className="text-sm font-extrabold leading-snug text-white">
+                {skin.weapon}
+                <br />
+                {skin.collection}
+              </p>
 
-        {/* title */}
-        <div className="mt-6">
-          <p className="text-sm font-extrabold leading-snug text-white">
-            {skin.weapon}
-            <br />
-            {skin.collection}
-          </p>
+              <div className="mt-2 flex items-center justify-between">
+                <p className="text-xs text-white/45">{skin.skin}</p>
+                <WishlistIconButton slug={skin.slug} />
+              </div>
 
-          <div className="mt-2 flex items-center justify-between">
-            <p className="text-xs text-white/45">{skin.skin}</p>
-            <WishlistIconButton slug={skin.slug} />
-          </div>
+              <p className="mt-3 text-sm font-extrabold text-white">{money(skin.price)}</p>
+              <p className="mt-1 text-xs font-semibold text-[#535EFE]">{skin.discount}%</p>
+            </div>
+          </>
+        ) : (
+          <>
+            {/* LIST */}
+            <div className="flex items-center gap-4">
+              <div className="relative h-[64px] w-[120px] shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-black/20">
+                <Image src={skin.image} alt="" fill className="object-contain p-2" />
+              </div>
 
-          <p className="mt-3 text-sm font-extrabold text-white">{money(skin.price)}</p>
-          <p className="mt-1 text-xs font-semibold text-[#535EFE]">{skin.discount}%</p>
-        </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-extrabold text-white">
+                      {skin.weapon} | {skin.skin}
+                    </p>
+                    <p className="mt-1 text-xs text-white/50">{skin.collection}</p>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <WishlistIconButton slug={skin.slug} />
+                    <div className="text-right">
+                      <div className="text-sm font-extrabold text-white">{money(skin.price)}</div>
+                      <div className="text-xs font-semibold text-[#535EFE]">{skin.discount}%</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-white/60">
+                  <span className="inline-flex items-center gap-2">
+                    <Image src={skin.icon} alt="" width={14} height={14} />
+                    {skin.floatValue}
+                  </span>
+                  <span className="text-white/30">•</span>
+                  <span>{skin.exterior}</span>
+                  {skin.statTrak ? (
+                    <>
+                      <span className="text-white/30">•</span>
+                      <span>StatTrak™</span>
+                    </>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
 }
+
+
 
 function Select({
   value,
@@ -289,6 +371,3 @@ function Select({
     </div>
   );
 }
-
-
-

@@ -91,5 +91,18 @@ export function writeCurrencyToSearchParams(sp: URLSearchParams, currency: Curre
   else sp.delete("currency");
 }
 
+export type ViewKey = "grid" | "list";
+
+export function parseViewFromSearchParams(sp: URLSearchParams): ViewKey {
+  const v = sp.get("view");
+  return v === "list" ? "list" : "grid";
+}
+
+export function writeViewToSearchParams(sp: URLSearchParams, view: ViewKey) {
+  if (view === "grid") sp.delete("view"); 
+  else sp.set("view", view);
+}
+
+
 
 

@@ -22,7 +22,9 @@ import {
   parseCurrencyFromSearchParams,
   writeCurrencyToSearchParams,
   type CurrencyKey,
-
+  parseViewFromSearchParams,
+  writeViewToSearchParams,
+  type ViewKey,
 } from "@/components/filters/url";
 
 const sortKeyToLabel: Record<SortKey, string> = {
@@ -78,6 +80,12 @@ export default function MarketplacePage() {
     return parseCurrencyFromSearchParams(sp);
   }, [searchParams]);
 
+  // --- URL -> state (view)
+  const urlView = useMemo(() => {
+    const sp = new URLSearchParams(searchParams.toString());
+    return parseViewFromSearchParams(sp);
+  }, [searchParams]);
+
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
   const [draftFilters, setDraftFilters] = useState<Filters>(DEFAULT_FILTERS);
   const [activeCategory, setActiveCategory] = useState(categories[0]);
@@ -87,6 +95,8 @@ export default function MarketplacePage() {
   const [debouncedQuery, setDebouncedQuery] = useState<string>("");
 
   const [currency, setCurrency] = useState<CurrencyKey>("usd");
+
+  const [view, setView] = useState<ViewKey>("grid");
 
 
   // debounce for query input
@@ -105,7 +115,9 @@ export default function MarketplacePage() {
     setDebouncedQuery(urlQuery);
 
     setCurrency(urlCurrency);
-  }, [urlFilters, urlCategory, urlSortLabel, urlQuery, urlCurrency]);
+
+    setView(urlView);
+  }, [urlFilters, urlCategory, urlSortLabel, urlQuery, urlCurrency, urlView]);
 
   // category change -> write to URL
   const onCategoryChange = (next: string) => {
@@ -153,6 +165,17 @@ const onCurrencyChange = (next: CurrencyKey) => {
     // intentionally NOT depending on searchParams to avoid extra loops
   }, [debouncedQuery, router, pathname]);
 
+  const onViewChange = (next: ViewKey) => {
+  setView(next);
+
+  const sp = new URLSearchParams(searchParams.toString());
+  writeViewToSearchParams(sp, next);
+
+  const qs = sp.toString();
+  router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+};
+
+
 
 
   return (
@@ -171,6 +194,8 @@ const onCurrencyChange = (next: CurrencyKey) => {
         onQueryChange={setQuery}
         currency={currency}
         onCurrencyChange={onCurrencyChange}
+        view={view}
+        onViewChange={onViewChange}
       />
 
       <FilterDrawer
