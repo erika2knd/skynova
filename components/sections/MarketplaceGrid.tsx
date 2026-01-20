@@ -1,11 +1,10 @@
 "use client";
 
-import type { ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useMemo, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 
-import { demoSkins, categories, type Skin } from "@/components/data/demoSkins";
+import { categories, type Skin } from "@/components/data/demoSkins";
 import WishlistIconButton from "../actions/WishlistIconButton";
 import SkeletonSkinCard from "../ui/SkeletonSkinCard";
 
@@ -20,6 +19,9 @@ type Filters = {
 };
 
 type MarketplaceGridProps = {
+  items: Skin[];
+  loading: boolean;
+
   onOpenFilters: () => void;
   filters: Filters;
 
@@ -40,8 +42,10 @@ type MarketplaceGridProps = {
 };
 
 export default function MarketplaceGrid({
+  items,
+  loading,
+
   onOpenFilters,
-  filters,
   activeCategory,
   onCategoryChange,
   sort,
@@ -53,14 +57,6 @@ export default function MarketplaceGrid({
   view,
   onViewChange,
 }: MarketplaceGridProps) {
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    setLoading(true);
-    const t = setTimeout(() => setLoading(false), 500);
-    return () => clearTimeout(t);
-  }, [activeCategory, sort, filters, query, currency]);
-
   // currency formatting (demo)
   const rate = currency === "eur" ? 0.92 : 1;
   const symbol = currency === "eur" ? "€" : "$";
@@ -69,49 +65,8 @@ export default function MarketplaceGrid({
     return `${symbol}${converted.toLocaleString("en-US")}`;
   };
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-
-    const min = filters.priceMin.trim() === "" ? null : Number(filters.priceMin);
-    const max = filters.priceMax.trim() === "" ? null : Number(filters.priceMax);
-
-    return demoSkins
-      .filter((s) => {
-        // 1) search
-        if (q) {
-          const hay = `${s.weapon} ${s.skin} ${s.collection}`.toLowerCase();
-          if (!hay.includes(q)) return false;
-        }
-
-        // 2) category
-        if (activeCategory && s.category !== activeCategory) return false;
-
-        // 3) price range
-        if (min !== null && !Number.isNaN(min) && s.price < min) return false;
-        if (max !== null && !Number.isNaN(max) && s.price > max) return false;
-
-        // 4) exterior
-        if (filters.exterior.length > 0) {
-          if (!filters.exterior.includes(s.exterior)) return false;
-        }
-
-        // 5) stattrak
-        if (filters.statTrak === "only" && !s.statTrak) return false;
-        if (filters.statTrak === "without" && s.statTrak) return false;
-
-        return true;
-      })
-      .sort((a, b) => {
-        if (sort === "Price: low") return a.price - b.price;
-        if (sort === "Price: high") return b.price - a.price;
-        if (sort === "Best deal") return Math.abs(b.discount) - Math.abs(a.discount);
-        if (sort === "Newest") return Number(b.id) - Number(a.id);
-        return 0;
-      });
-  }, [query, activeCategory, sort, filters]);
-
   return (
-    <section>
+    <section className="mt-24">
       <div className="mx-auto max-w-[1240px] px-6 pb-12">
         {/* Top categories row */}
         <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 backdrop-blur">
@@ -136,103 +91,68 @@ export default function MarketplaceGrid({
         </div>
 
         {/* Filter bar */}
-        <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 backdrop-blur">
-          {/* MOBILE */}
-          <div className="grid gap-3 sm:hidden">
-            {/* row 1 */}
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                onClick={onOpenFilters}
-                className="h-12 rounded-xl border border-white/10 bg-white/5 px-4 text-sm text-white/85 transition hover:bg-white/10"
-              >
-                Filter
-              </button>
+        <div className="mt-4 flex flex-wrap items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 backdrop-blur">
+          <button
+            onClick={onOpenFilters}
+            className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/85 transition hover:bg-white/10"
+          >
+            Filter
+          </button>
 
-              <Select
-                value={sort}
-                onChange={onSortChange}
-                options={sortOptions}
-                className="h-12 w-full"
-              />
-            </div>
+          <Select value={sort} onChange={onSortChange} options={sortOptions} />
 
-            {/* row 2 */}
-            <div className="grid grid-cols-2 gap-3">
-              <Select
-                value={currency === "usd" ? "USD" : "EUR"}
-                onChange={(v) => onCurrencyChange(v === "EUR" ? "eur" : "usd")}
-                options={currencyOptions}
-                className="h-12 w-full"
-              />
+          <Select
+            value={currency === "usd" ? "USD" : "EUR"}
+            onChange={(v) => onCurrencyChange(v === "EUR" ? "eur" : "usd")}
+            options={currencyOptions}
+          />
 
-              <div className="grid grid-cols-2 gap-3">
-                <ViewButton active={view === "grid"} onClick={() => onViewChange("grid")}>
-                  ▦
-                </ViewButton>
-                <ViewButton active={view === "list"} onClick={() => onViewChange("list")}>
-                  ≣
-                </ViewButton>
-              </div>
-            </div>
-
-            {/* row 3 */}
-            <SearchInput query={query} onChange={onQueryChange} />
+          {/* Search */}
+          <div className="flex min-w-[220px] flex-1 items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2">
+            <span className="text-white/40">⌕</span>
+            <input
+              value={query}
+              onChange={(e) => onQueryChange(e.target.value)}
+              placeholder="Search"
+              className="w-full bg-transparent text-sm text-white placeholder:text-white/35 outline-none"
+            />
           </div>
 
-          {/* DESKTOP / TABLET */}
-          <div className="hidden flex-wrap items-center gap-3 sm:flex">
+          {/* View buttons */}
+          <div className="ml-auto flex items-center gap-2">
             <button
-              onClick={onOpenFilters}
-              className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/85 transition hover:bg-white/10"
+              type="button"
+              onClick={() => onViewChange("grid")}
+              aria-label="Grid view"
+              className={`grid h-10 w-10 place-items-center rounded-xl border border-white/10 transition
+                ${
+                  view === "grid"
+                    ? "bg-white/10 text-white"
+                    : "bg-white/5 text-white/70 hover:bg-white/10"
+                }
+              `}
             >
-              Filter
+              ▦
             </button>
 
-            <Select value={sort} onChange={onSortChange} options={sortOptions} />
-
-            <Select
-              value={currency === "usd" ? "USD" : "EUR"}
-              onChange={(v) => onCurrencyChange(v === "EUR" ? "eur" : "usd")}
-              options={currencyOptions}
-            />
-
-            <div className="flex min-w-[220px] flex-1 items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2">
-              <span className="text-white/40">⌕</span>
-              <input
-                value={query}
-                onChange={(e) => onQueryChange(e.target.value)}
-                placeholder="Search"
-                className="w-full bg-transparent text-sm text-white placeholder:text-white/35 outline-none"
-              />
-            </div>
-
-            <div className="ml-auto flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => onViewChange("grid")}
-                aria-label="Grid view"
-                className={`grid h-10 w-10 place-items-center rounded-xl border border-white/10 transition
-                  ${view === "grid" ? "bg-white/10 text-white" : "bg-white/5 text-white/70 hover:bg-white/10"}
-                `}
-              >
-                ▦
-              </button>
-
-              <button
-                type="button"
-                onClick={() => onViewChange("list")}
-                aria-label="List view"
-                className={`grid h-10 w-10 place-items-center rounded-xl border border-white/10 transition
-                  ${view === "list" ? "bg-white/10 text-white" : "bg-white/5 text-white/70 hover:bg-white/10"}
-                `}
-              >
-                ≣
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => onViewChange("list")}
+              aria-label="List view"
+              className={`grid h-10 w-10 place-items-center rounded-xl border border-white/10 transition
+                ${
+                  view === "list"
+                    ? "bg-white/10 text-white"
+                    : "bg-white/5 text-white/70 hover:bg-white/10"
+                }
+              `}
+            >
+              ≣
+            </button>
           </div>
         </div>
 
-        {/* Grid */}
+        {/* Grid / List */}
         <div
           className={`mt-6 grid gap-5 ${
             view === "grid"
@@ -242,7 +162,7 @@ export default function MarketplaceGrid({
         >
           {loading
             ? Array.from({ length: 10 }).map((_, i) => <SkeletonSkinCard key={i} />)
-            : filtered.map((skin) => (
+            : items.map((skin) => (
                 <Link
                   key={skin.id}
                   href={`/marketplace/${skin.slug}`}
@@ -253,7 +173,14 @@ export default function MarketplaceGrid({
               ))}
         </div>
 
-        {/* Down button */}
+        {/* Empty state */}
+        {!loading && items.length === 0 ? (
+          <div className="mt-10 rounded-2xl border border-white/10 bg-white/5 p-8 text-center text-white/70">
+            No results found. Try changing filters or search query.
+          </div>
+        ) : null}
+
+        {/* Down button (пока демо) */}
         <div className="mt-10 flex justify-center">
           <button className="grid h-14 w-14 place-items-center rounded-full border border-white/10 bg-white/5 text-white/70 transition hover:bg-white/10">
             ↓
@@ -281,8 +208,6 @@ export default function MarketplaceGrid({
     </section>
   );
 }
-
-/* ----------------- Cards ----------------- */
 
 function SkinCard({
   skin,
@@ -385,67 +310,21 @@ function SkinCard({
   );
 }
 
-/* ----------------- UI helpers ----------------- */
-
-function ViewButton({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`grid h-12 w-full place-items-center rounded-xl border border-white/10 transition
-        ${active ? "bg-white/10 text-white" : "bg-white/5 text-white/70 hover:bg-white/10"}
-      `}
-    >
-      {children}
-    </button>
-  );
-}
-
-function SearchInput({
-  query,
-  onChange,
-}: {
-  query: string;
-  onChange: (v: string) => void;
-}) {
-  return (
-    <div className="flex h-12 items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3">
-      <span className="text-white/40">⌕</span>
-      <input
-        value={query}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder="Search"
-        className="w-full bg-transparent text-sm text-white placeholder:text-white/35 outline-none"
-      />
-    </div>
-  );
-}
-
 function Select({
   value,
   onChange,
   options,
-  className = "",
 }: {
   value: string;
   onChange: (v: string) => void;
   options: string[];
-  className?: string;
 }) {
   return (
-    <div className={`relative ${className}`}>
+    <div className="relative">
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="h-full w-full appearance-none rounded-xl border border-white/10 bg-white/5 px-4 py-2 pr-9 text-sm text-white/85 outline-none transition hover:bg-white/10"
+        className="appearance-none rounded-xl border border-white/10 bg-white/5 px-4 py-2 pr-9 text-sm text-white/85 outline-none transition hover:bg-white/10"
       >
         {options.map((o) => (
           <option key={o} value={o} className="bg-[#222326]">
@@ -459,3 +338,4 @@ function Select({
     </div>
   );
 }
+

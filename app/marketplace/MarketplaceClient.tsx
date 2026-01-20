@@ -1,228 +1,198 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-
+import { useEffect, useMemo, useRef, useState } from "react";
 import MarketplaceGrid from "@/components/sections/MarketplaceGrid";
-import FilterDrawer from "@/components/filters/FilterDrawer";
-import type { Filters } from "@/components/filters/types";
-import { categories } from "@/components/data/demoSkins";
+import type { Skin } from "@/components/data/demoSkins";
 
-import {
-  DEFAULT_FILTERS,
-  parseFiltersFromSearchParams,
-  writeFiltersToSearchParams,
-  parseCategoryFromSearchParams,
-  writeCategoryToSearchParams,
-  parseSortFromSearchParams,
-  writeSortToSearchParams,
-  parseQueryFromSearchParams,
-  writeQueryToSearchParams,
-  type SortKey,
-  parseCurrencyFromSearchParams,
-  writeCurrencyToSearchParams,
-  type CurrencyKey,
-  parseViewFromSearchParams,
-  writeViewToSearchParams,
-  type ViewKey,
-} from "@/components/filters/url";
-
-const sortKeyToLabel: Record<SortKey, string> = {
-  best: "Best deal",
-  newest: "Newest",
-  price_low: "Price: low",
-  price_high: "Price: high",
+type Filters = {
+  priceMin: string;
+  priceMax: string;
+  exterior: string[];
+  statTrak: "any" | "only" | "without";
 };
 
-const sortLabelToKey: Record<string, SortKey> = {
-  "Best deal": "best",
-  Newest: "newest",
-  "Price: low": "price_low",
-  "Price: high": "price_high",
-};
+const PAGE_SIZE = 20;
 
 export default function MarketplaceClient() {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
+  const [items, setItems] = useState<Skin[]>([]);
+  const [total, setTotal] = useState(0);
 
-  const currentQs = searchParams.toString();
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
 
-  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [activeCategory, setActiveCategory] = useState("All");
+  const [sort, setSort] = useState("Best deal");
+  const [query, setQuery] = useState("");
+  const [currency, setCurrency] = useState<"usd" | "eur">("usd");
+  const [view, setView] = useState<"grid" | "list">("grid");
 
-  // --- URL -> state (filters)
-  const urlFilters = useMemo<Filters>(() => {
-    const sp = new URLSearchParams(currentQs);
-    return parseFiltersFromSearchParams(sp);
-  }, [currentQs]);
+  const [filters, setFilters] = useState<Filters>({
+    priceMin: "",
+    priceMax: "",
+    exterior: [],
+    statTrak: "any",
+  });
 
-  // --- URL -> state (category)
-  const urlCategory = useMemo(() => {
-    const sp = new URLSearchParams(currentQs);
-    const cat = parseCategoryFromSearchParams(sp);
-    return categories.includes(cat as any) ? cat : categories[0];
-  }, [currentQs]);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
 
-  // --- URL -> state (sort label)
-  const urlSortLabel = useMemo(() => {
-    const sp = new URLSearchParams(currentQs);
-    const sortKey = parseSortFromSearchParams(sp);
-    return sortKeyToLabel[sortKey];
-  }, [currentQs]);
-
-  // --- URL -> state (query)
-  const urlQuery = useMemo(() => {
-    const sp = new URLSearchParams(currentQs);
-    return parseQueryFromSearchParams(sp);
-  }, [currentQs]);
-
-  // --- URL -> state (currency)
-  const urlCurrency = useMemo(() => {
-    const sp = new URLSearchParams(currentQs);
-    return parseCurrencyFromSearchParams(sp);
-  }, [currentQs]);
-
-  // --- URL -> state (view)
-  const urlView = useMemo(() => {
-    const sp = new URLSearchParams(currentQs);
-    return parseViewFromSearchParams(sp);
-  }, [currentQs]);
-
-  const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
-  const [draftFilters, setDraftFilters] = useState<Filters>(DEFAULT_FILTERS);
-  const [activeCategory, setActiveCategory] = useState(categories[0]);
-  const [sort, setSort] = useState<string>("Best deal");
-
-  const [query, setQuery] = useState<string>("");
-  const [debouncedQuery, setDebouncedQuery] = useState<string>("");
-
-  const [currency, setCurrency] = useState<CurrencyKey>("usd");
-  const [view, setView] = useState<ViewKey>("grid");
-
-  // debounce for query input
+  const [debouncedQuery, setDebouncedQuery] = useState(query);
   useEffect(() => {
     const t = setTimeout(() => setDebouncedQuery(query), 300);
     return () => clearTimeout(t);
   }, [query]);
 
-  // sync: when URL changes -> update applied state
+  const baseParams = useMemo(() => {
+    const params = new URLSearchParams();
+
+    if (debouncedQuery.trim()) params.set("q", debouncedQuery.trim());
+    if (activeCategory && activeCategory !== "All") params.set("category", activeCategory);
+
+    params.set("sort", sort);
+
+    if (filters.statTrak !== "any") params.set("statTrak", filters.statTrak);
+    filters.exterior.forEach((e) => params.append("exterior", e));
+
+    if (filters.priceMin.trim()) params.set("priceMin", filters.priceMin.trim());
+    if (filters.priceMax.trim()) params.set("priceMax", filters.priceMax.trim());
+
+    params.set("limit", String(PAGE_SIZE));
+
+    return params;
+  }, [activeCategory, sort, filters, debouncedQuery]);
+
+  const queryKey = baseParams.toString();
+
+  const abortRef = useRef<AbortController | null>(null);
+
+  async function fetchPage(offset: number, mode: "replace" | "append") {
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    const params = new URLSearchParams(baseParams);
+    params.set("offset", String(offset));
+
+    const res = await fetch(`/api/skins?${params.toString()}`, { signal: controller.signal });
+
+    if (!res.ok) throw new Error("Failed to fetch skins");
+
+    const json: { items: Skin[]; total: number; limit: number; offset: number } = await res.json();
+
+    if (mode === "replace") {
+      setItems(json.items ?? []);
+    } else {
+      setItems((prev) => [...prev, ...(json.items ?? [])]);
+    }
+
+    setTotal(json.total ?? 0);
+  }
+
   useEffect(() => {
-    setFilters(urlFilters);
-    setActiveCategory(urlCategory);
-    setSort(urlSortLabel);
+    let cancelled = false;
 
-    setQuery(urlQuery);
-    setDebouncedQuery(urlQuery);
+    async function loadFirst() {
+      setLoading(true);
+      try {
+        await fetchPage(0, "replace");
+      } catch (err: any) {
+        if (err?.name !== "AbortError") console.error("Marketplace fetch error:", err);
+        if (!cancelled) {
+          setItems([]);
+          setTotal(0);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
 
-    setCurrency(urlCurrency);
-    setView(urlView);
-  }, [urlFilters, urlCategory, urlSortLabel, urlQuery, urlCurrency, urlView]);
+    loadFirst();
 
-  // category change -> write to URL
-  const onCategoryChange = (next: string) => {
-    setActiveCategory(next);
+    return () => {
+      cancelled = true;
+      abortRef.current?.abort();
+    };
+  }, [queryKey]);
 
-    const sp = new URLSearchParams(currentQs);
-    writeCategoryToSearchParams(sp, next);
+  const canLoadMore = items.length < total;
 
-    const nextQs = sp.toString();
-    if (nextQs === currentQs) return;
+  const onLoadMore = async () => {
+    if (!canLoadMore || loadingMore) return;
 
-    router.replace(nextQs ? `${pathname}?${nextQs}` : pathname, { scroll: false });
+    setLoadingMore(true);
+    try {
+      await fetchPage(items.length, "append");
+    } catch (err: any) {
+      if (err?.name !== "AbortError") console.error("Load more error:", err);
+    } finally {
+      setLoadingMore(false);
+    }
   };
-
-  // sort change -> write to URL
-  const onSortChange = (nextLabel: string) => {
-    setSort(nextLabel);
-
-    const nextKey = sortLabelToKey[nextLabel] ?? "best";
-
-    const sp = new URLSearchParams(currentQs);
-    writeSortToSearchParams(sp, nextKey);
-
-    const nextQs = sp.toString();
-    if (nextQs === currentQs) return;
-
-    router.replace(nextQs ? `${pathname}?${nextQs}` : pathname, { scroll: false });
-  };
-
-  // currency change -> write to URL
-  const onCurrencyChange = (next: CurrencyKey) => {
-    setCurrency(next);
-
-    const sp = new URLSearchParams(currentQs);
-    writeCurrencyToSearchParams(sp, next);
-
-    const nextQs = sp.toString();
-    if (nextQs === currentQs) return;
-
-    router.replace(nextQs ? `${pathname}?${nextQs}` : pathname, { scroll: false });
-  };
-
-  // view change -> write to URL
-  const onViewChange = (next: ViewKey) => {
-    setView(next);
-
-    const sp = new URLSearchParams(currentQs);
-    writeViewToSearchParams(sp, next);
-
-    const nextQs = sp.toString();
-    if (nextQs === currentQs) return;
-
-    router.replace(nextQs ? `${pathname}?${nextQs}` : pathname, { scroll: false });
-  };
-
-  // debounced query -> write to URL
-  useEffect(() => {
-    const sp = new URLSearchParams(currentQs);
-    writeQueryToSearchParams(sp, debouncedQuery);
-
-    const nextQs = sp.toString();
-    if (nextQs === currentQs) return; 
-
-    router.replace(nextQs ? `${pathname}?${nextQs}` : pathname, { scroll: false });
-  }, [debouncedQuery, pathname, router, currentQs]);
 
   return (
-    <main className="min-h-screen pt-28 pb-16 md:pb-24">
+    <>
       <MarketplaceGrid
-        onOpenFilters={() => {
-          setDraftFilters(filters);
-          setFiltersOpen(true);
-        }}
+        items={items}
+        loading={loading}
         filters={filters}
+        onOpenFilters={() => setIsFilterOpen(true)}
         activeCategory={activeCategory}
-        onCategoryChange={onCategoryChange}
+        onCategoryChange={setActiveCategory}
         sort={sort}
-        onSortChange={onSortChange}
+        onSortChange={setSort}
         query={query}
         onQueryChange={setQuery}
         currency={currency}
-        onCurrencyChange={onCurrencyChange}
+        onCurrencyChange={setCurrency}
         view={view}
-        onViewChange={onViewChange}
+        onViewChange={setView}
       />
 
-      <FilterDrawer
-        open={filtersOpen}
-        onClose={() => setFiltersOpen(false)}
-        draft={draftFilters}
-        onChange={setDraftFilters}
-        onReset={() => setDraftFilters(DEFAULT_FILTERS)}
-        onApply={() => {
-          setFilters(draftFilters);
+      {/* Load more */}
+      <div className="mx-auto max-w-[1240px] px-6 pb-20">
+        <div className="mt-8 flex flex-col items-center gap-3">
+          <div className="text-sm text-white/50">
+            Showing <span className="text-white/80">{items.length}</span> of{" "}
+            <span className="text-white/80">{total}</span>
+          </div>
 
-          const sp = new URLSearchParams(currentQs);
-          writeFiltersToSearchParams(sp, draftFilters);
+          {canLoadMore ? (
+            <button
+              type="button"
+              onClick={onLoadMore}
+              disabled={loadingMore}
+              className="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-purple-500 to-indigo-500 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-purple-500/20 transition hover:brightness-110 disabled:opacity-60"
+            >
+              {loadingMore ? "Loading..." : "Load more"}
+            </button>
+          ) : (
+            !loading && (
+              <div className="text-sm text-white/50">
+                {total === 0 ? "No results" : "You’ve reached the end"}
+              </div>
+            )
+          )}
+        </div>
+      </div>
 
-          const nextQs = sp.toString();
-          if (nextQs !== currentQs) {
-            router.replace(nextQs ? `${pathname}?${nextQs}` : pathname, { scroll: false });
-          }
+      {/* FILTER MODAL  */}
+      {isFilterOpen && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/60">
+          <div className="w-full max-w-md rounded-2xl bg-[#1F2023] p-6 text-white">
+            <h2 className="text-lg font-bold">Filters</h2>
 
-          setFiltersOpen(false);
-        }}
-      />
-    </main>
+            <p className="mt-2 text-sm text-white/60">
+              Filter UI подключим следующим шагом
+            </p>
+
+            <button
+              onClick={() => setIsFilterOpen(false)}
+              className="mt-6 rounded-xl bg-white/10 px-4 py-2 text-sm hover:bg-white/20"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
