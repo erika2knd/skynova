@@ -4,14 +4,31 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import MarketplaceGrid from "@/components/sections/MarketplaceGrid";
 import type { Skin } from "@/components/data/demoSkins";
 
-type Filters = {
-  priceMin: string;
-  priceMax: string;
-  exterior: string[];
-  statTrak: "any" | "only" | "without";
-};
+import FilterDrawer from "@/components/filters/FilterDrawer";
+import type { Filters } from "@/components/filters/types";
+import { DEFAULT_FILTERS } from "@/components/filters/url";
 
 const PAGE_SIZE = 20;
+
+function normalizePriceRange(draft: Filters): Filters {
+  const minRaw = draft.priceMin.trim();
+  const maxRaw = draft.priceMax.trim();
+
+  if (!minRaw || !maxRaw) return { ...draft, priceMin: minRaw, priceMax: maxRaw };
+
+  const min = Number(minRaw);
+  const max = Number(maxRaw);
+
+  if (!Number.isFinite(min) || !Number.isFinite(max)) {
+    return { ...draft, priceMin: minRaw, priceMax: maxRaw };
+  }
+
+  if (min > max) {
+    return { ...draft, priceMin: maxRaw, priceMax: minRaw };
+  }
+
+  return { ...draft, priceMin: minRaw, priceMax: maxRaw };
+}
 
 export default function MarketplaceClient() {
   const [items, setItems] = useState<Skin[]>([]);
@@ -26,14 +43,40 @@ export default function MarketplaceClient() {
   const [currency, setCurrency] = useState<"usd" | "eur">("usd");
   const [view, setView] = useState<"grid" | "list">("grid");
 
-  const [filters, setFilters] = useState<Filters>({
-    priceMin: "",
-    priceMax: "",
-    exterior: [],
-    statTrak: "any",
-  });
+  // applied filters 
+  const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
+
+  // draft filters 
+  const [draftFilters, setDraftFilters] = useState<Filters>(DEFAULT_FILTERS);
 
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+
+  const onOpenFilters = () => {
+    setDraftFilters(filters);
+    setIsFilterOpen(true);
+  };
+
+  const onCloseFilters = () => setIsFilterOpen(false);
+
+  const onApplyFilters = () => {
+    const next = normalizePriceRange(draftFilters);
+    setFilters(next);
+    setIsFilterOpen(false);
+  };
+
+  const onResetFilters = () => {
+    setDraftFilters(DEFAULT_FILTERS);
+    setFilters(DEFAULT_FILTERS);
+    setIsFilterOpen(false);
+  };
+
+    const onClearFilters = () => {
+    // Clear both draft and applied filters, and close the drawer if it's open
+    setDraftFilters(DEFAULT_FILTERS);
+    setFilters(DEFAULT_FILTERS);
+    setIsFilterOpen(false);
+  };
+
 
   const [debouncedQuery, setDebouncedQuery] = useState(query);
   useEffect(() => {
@@ -73,7 +116,6 @@ export default function MarketplaceClient() {
     params.set("offset", String(offset));
 
     const res = await fetch(`/api/skins?${params.toString()}`, { signal: controller.signal });
-
     if (!res.ok) throw new Error("Failed to fetch skins");
 
     const json: { items: Skin[]; total: number; limit: number; offset: number } = await res.json();
@@ -128,71 +170,64 @@ export default function MarketplaceClient() {
     }
   };
 
+  // Count active filter groups (used for UI indicator)
+const activeFilterCount = useMemo(() => {
+  let count = 0;
+
+  // Price filter is active if min or max is set
+  if (filters.priceMin.trim() || filters.priceMax.trim()) {
+    count += 1;
+  }
+
+  // Exterior filter is active if at least one value is selected
+  if (filters.exterior.length > 0) {
+    count += 1;
+  }
+
+  // StatTrak filter is active if not set to "any"
+  if (filters.statTrak !== "any") {
+    count += 1;
+  }
+
+  return count;
+}, [filters]);
+
+
   return (
     <>
       <MarketplaceGrid
-        items={items}
-        loading={loading}
-        filters={filters}
-        onOpenFilters={() => setIsFilterOpen(true)}
-        activeCategory={activeCategory}
-        onCategoryChange={setActiveCategory}
-        sort={sort}
-        onSortChange={setSort}
-        query={query}
-        onQueryChange={setQuery}
-        currency={currency}
-        onCurrencyChange={setCurrency}
-        view={view}
-        onViewChange={setView}
+  items={items}
+  total={total}
+  loading={loading}
+  loadingMore={loadingMore}
+  canLoadMore={canLoadMore}
+  onLoadMore={onLoadMore}
+  filters={filters}
+  activeFilterCount={activeFilterCount}
+  onOpenFilters={onOpenFilters}
+  onClearFilters={onClearFilters}
+  activeCategory={activeCategory}
+  onCategoryChange={setActiveCategory}
+  sort={sort}
+  onSortChange={setSort}
+  query={query}
+  onQueryChange={setQuery}
+  currency={currency}
+  onCurrencyChange={setCurrency}
+  view={view}
+  onViewChange={setView}
+/>
+
+
+      <FilterDrawer
+        open={isFilterOpen}
+        onClose={onCloseFilters}
+        draft={draftFilters}
+        onChange={setDraftFilters}
+        onReset={onResetFilters}
+        onApply={onApplyFilters}
       />
-
-      {/* Load more */}
-      <div className="mx-auto max-w-[1240px] px-6 pb-20">
-        <div className="mt-8 flex flex-col items-center gap-3">
-          <div className="text-sm text-white/50">
-            Showing <span className="text-white/80">{items.length}</span> of{" "}
-            <span className="text-white/80">{total}</span>
-          </div>
-
-          {canLoadMore ? (
-            <button
-              type="button"
-              onClick={onLoadMore}
-              disabled={loadingMore}
-              className="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-purple-500 to-indigo-500 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-purple-500/20 transition hover:brightness-110 disabled:opacity-60"
-            >
-              {loadingMore ? "Loading..." : "Load more"}
-            </button>
-          ) : (
-            !loading && (
-              <div className="text-sm text-white/50">
-                {total === 0 ? "No results" : "You’ve reached the end"}
-              </div>
-            )
-          )}
-        </div>
-      </div>
-
-      {/* FILTER MODAL  */}
-      {isFilterOpen && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-black/60">
-          <div className="w-full max-w-md rounded-2xl bg-[#1F2023] p-6 text-white">
-            <h2 className="text-lg font-bold">Filters</h2>
-
-            <p className="mt-2 text-sm text-white/60">
-              Filter UI подключим следующим шагом
-            </p>
-
-            <button
-              onClick={() => setIsFilterOpen(false)}
-              className="mt-6 rounded-xl bg-white/10 px-4 py-2 text-sm hover:bg-white/20"
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      )}
     </>
   );
 }
+

@@ -89,10 +89,19 @@ export async function GET(req: Request) {
     return NextResponse.json({ items: [], total: 0, limit, offset }, { status: 500 });
   }
 
-  return NextResponse.json({
-    items: data ?? [],
-    total: count ?? 0,
-    limit,
-    offset,
-  });
+  // Normalize DB fields for frontend usage
+const items =
+  (data ?? []).map((item) => ({
+    ...item,
+    // Convert snake/lowercase DB field to camelCase for UI
+    statTrak: item.stattrak,
+  })) ?? [];
+
+return NextResponse.json({
+  items,
+  total: count ?? 0,
+  limit,
+  offset,
+});
+
 }

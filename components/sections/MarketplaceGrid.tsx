@@ -2,11 +2,14 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState, useEffect } from "react";
 
-import { categories, type Skin } from "@/components/data/demoSkins";
+// We only import the Skin type from demoSkins now (no categories from demo data)
+import type { Skin } from "@/components/data/demoSkins";
+
 import WishlistIconButton from "../actions/WishlistIconButton";
 import SkeletonSkinCard from "../ui/SkeletonSkinCard";
+
+const MARKETPLACE_CATEGORIES = ["All", "Rifles", "Pistols", "Knives", "Gloves"] as const;
 
 const sortOptions = ["Best deal", "Newest", "Price: low", "Price: high"];
 const currencyOptions = ["USD", "EUR"];
@@ -20,10 +23,16 @@ type Filters = {
 
 type MarketplaceGridProps = {
   items: Skin[];
+  total: number;
   loading: boolean;
+  loadingMore: boolean;
+  canLoadMore: boolean;
+  onLoadMore: () => void;
 
   onOpenFilters: () => void;
   filters: Filters;
+
+  activeFilterCount: number;
 
   activeCategory: string;
   onCategoryChange: (next: string) => void;
@@ -39,13 +48,23 @@ type MarketplaceGridProps = {
 
   view: "grid" | "list";
   onViewChange: (v: "grid" | "list") => void;
+
+  // Clears all applied filters (price/exterior/stattrak) from the toolbar
+  onClearFilters: () => void;
 };
 
 export default function MarketplaceGrid({
   items,
+  total,
   loading,
+  loadingMore,
+  canLoadMore,
+  onLoadMore,
 
   onOpenFilters,
+  onClearFilters,
+  activeFilterCount,
+
   activeCategory,
   onCategoryChange,
   sort,
@@ -57,9 +76,9 @@ export default function MarketplaceGrid({
   view,
   onViewChange,
 }: MarketplaceGridProps) {
-  // currency formatting (demo)
   const rate = currency === "eur" ? 0.92 : 1;
   const symbol = currency === "eur" ? "€" : "$";
+
   const money = (v: number) => {
     const converted = Math.round(v * rate);
     return `${symbol}${converted.toLocaleString("en-US")}`;
@@ -68,14 +87,15 @@ export default function MarketplaceGrid({
   return (
     <section className="mt-24">
       <div className="mx-auto max-w-[1240px] px-6 pb-12">
-        {/* Top categories row */}
         <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 backdrop-blur">
           <div className="flex items-center gap-3 overflow-x-auto">
-            {categories.map((c) => {
+            {MARKETPLACE_CATEGORIES.map((c) => {
               const active = c === activeCategory;
+
               return (
                 <button
                   key={c}
+                  type="button"
                   onClick={() => onCategoryChange(c)}
                   className={`shrink-0 rounded-xl px-3 py-2 text-sm transition ${
                     active
@@ -90,14 +110,36 @@ export default function MarketplaceGrid({
           </div>
         </div>
 
-        {/* Filter bar */}
         <div className="mt-4 flex flex-wrap items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 backdrop-blur">
-          <button
-            onClick={onOpenFilters}
-            className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/85 transition hover:bg-white/10"
-          >
-            Filter
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={onOpenFilters}
+              className="relative rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/85 transition hover:bg-white/10"
+            >
+              {/* Filter button label */}
+              <span>Filter</span>
+
+              {/* Active filters count badge */}
+              {activeFilterCount > 0 && (
+                <span className="ml-2 inline-flex min-w-[20px] items-center justify-center rounded-full bg-[#535EFE] px-1.5 text-xs font-semibold text-white">
+                  {activeFilterCount}
+                </span>
+              )}
+            </button>
+
+            {/* Show "Clear" only when there are active filters */}
+            {activeFilterCount > 0 && (
+              <button
+                type="button"
+                onClick={onClearFilters}
+                className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/70 transition hover:bg-white/10 hover:text-white"
+              >
+                {/* Clear all applied filters */}
+                Clear
+              </button>
+            )}
+          </div>
 
           <Select value={sort} onChange={onSortChange} options={sortOptions} />
 
@@ -107,7 +149,6 @@ export default function MarketplaceGrid({
             options={currencyOptions}
           />
 
-          {/* Search */}
           <div className="flex min-w-[220px] flex-1 items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2">
             <span className="text-white/40">⌕</span>
             <input
@@ -118,19 +159,16 @@ export default function MarketplaceGrid({
             />
           </div>
 
-          {/* View buttons */}
           <div className="ml-auto flex items-center gap-2">
             <button
               type="button"
               onClick={() => onViewChange("grid")}
               aria-label="Grid view"
-              className={`grid h-10 w-10 place-items-center rounded-xl border border-white/10 transition
-                ${
-                  view === "grid"
-                    ? "bg-white/10 text-white"
-                    : "bg-white/5 text-white/70 hover:bg-white/10"
-                }
-              `}
+              className={`grid h-10 w-10 place-items-center rounded-xl border border-white/10 transition ${
+                view === "grid"
+                  ? "bg-white/10 text-white"
+                  : "bg-white/5 text-white/70 hover:bg-white/10"
+              }`}
             >
               ▦
             </button>
@@ -139,20 +177,17 @@ export default function MarketplaceGrid({
               type="button"
               onClick={() => onViewChange("list")}
               aria-label="List view"
-              className={`grid h-10 w-10 place-items-center rounded-xl border border-white/10 transition
-                ${
-                  view === "list"
-                    ? "bg-white/10 text-white"
-                    : "bg-white/5 text-white/70 hover:bg-white/10"
-                }
-              `}
+              className={`grid h-10 w-10 place-items-center rounded-xl border border-white/10 transition ${
+                view === "list"
+                  ? "bg-white/10 text-white"
+                  : "bg-white/5 text-white/70 hover:bg-white/10"
+              }`}
             >
               ≣
             </button>
           </div>
         </div>
 
-        {/* Grid / List */}
         <div
           className={`mt-6 grid gap-5 ${
             view === "grid"
@@ -173,26 +208,43 @@ export default function MarketplaceGrid({
               ))}
         </div>
 
-        {/* Empty state */}
         {!loading && items.length === 0 ? (
           <div className="mt-10 rounded-2xl border border-white/10 bg-white/5 p-8 text-center text-white/70">
             No results found. Try changing filters or search query.
           </div>
         ) : null}
 
-        {/* Down button (пока демо) */}
-        <div className="mt-10 flex justify-center">
-          <button className="grid h-14 w-14 place-items-center rounded-full border border-white/10 bg-white/5 text-white/70 transition hover:bg-white/10">
-            ↓
-          </button>
+        <div className="mt-10 flex flex-col items-center gap-3">
+          <div className="text-sm text-white/50">
+            Showing <span className="text-white/80">{items.length}</span> of{" "}
+            <span className="text-white/80">{total}</span>
+          </div>
+
+          {canLoadMore ? (
+            <button
+              type="button"
+              onClick={onLoadMore}
+              disabled={loadingMore}
+              aria-label="Load more"
+              className={[
+                "grid h-14 w-14 place-items-center rounded-full border border-white/10",
+                "bg-white/5 text-white/70 transition hover:bg-white/10",
+                "disabled:opacity-60 disabled:cursor-not-allowed",
+              ].join(" ")}
+            >
+              {loadingMore ? "…" : "↓"}
+            </button>
+          ) : !loading ? (
+            <div className="text-sm text-white/50">
+              {total === 0 ? "No results" : "You’ve reached the end"}
+            </div>
+          ) : null}
         </div>
       </div>
 
-      {/* FULL WIDTH BANNER */}
       <div className="mt-10 overflow-hidden bg-white/5">
         <div className="relative h-[280px] w-full">
           <Image src="/images/reviews-bg.png" alt="" fill className="object-cover object-center" />
-
           <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/20 to-black/30" />
           <div className="absolute inset-0 bg-gradient-to-r from-[#680BE2]/45 via-transparent to-[#535EFE]/35" />
 
@@ -223,7 +275,6 @@ function SkinCard({
       <div className={`rounded-3xl bg-[#1F2023] p-4 ${view === "list" ? "sm:p-5" : ""}`}>
         {view === "grid" ? (
           <>
-            {/* GRID */}
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-2">
                 <div className="grid h-8 w-8 place-items-center">
@@ -262,48 +313,45 @@ function SkinCard({
             </div>
           </>
         ) : (
-          <>
-            {/* LIST */}
-            <div className="flex items-center gap-4">
-              <div className="relative h-[64px] w-[120px] shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-black/20">
-                <Image src={skin.image} alt="" fill className="object-contain p-2" />
+          <div className="flex items-center gap-4">
+            <div className="relative h-[64px] w-[120px] shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-black/20">
+              <Image src={skin.image} alt="" fill className="object-contain p-2" />
+            </div>
+
+            <div className="min-w-0 flex-1">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-extrabold text-white">
+                    {skin.weapon} | {skin.skin}
+                  </p>
+                  <p className="mt-1 text-xs text-white/50">{skin.collection}</p>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <WishlistIconButton slug={skin.slug} />
+                  <div className="text-right">
+                    <div className="text-sm font-extrabold text-white">{money(skin.price)}</div>
+                    <div className="text-xs font-semibold text-[#535EFE]">{skin.discount}%</div>
+                  </div>
+                </div>
               </div>
 
-              <div className="min-w-0 flex-1">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-extrabold text-white">
-                      {skin.weapon} | {skin.skin}
-                    </p>
-                    <p className="mt-1 text-xs text-white/50">{skin.collection}</p>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <WishlistIconButton slug={skin.slug} />
-                    <div className="text-right">
-                      <div className="text-sm font-extrabold text-white">{money(skin.price)}</div>
-                      <div className="text-xs font-semibold text-[#535EFE]">{skin.discount}%</div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-white/60">
-                  <span className="inline-flex items-center gap-2">
-                    <Image src={skin.icon} alt="" width={14} height={14} />
-                    {skin.floatValue}
-                  </span>
-                  <span className="text-white/30">•</span>
-                  <span>{skin.exterior}</span>
-                  {skin.statTrak ? (
-                    <>
-                      <span className="text-white/30">•</span>
-                      <span>StatTrak™</span>
-                    </>
-                  ) : null}
-                </div>
+              <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-white/60">
+                <span className="inline-flex items-center gap-2">
+                  <Image src={skin.icon} alt="" width={14} height={14} />
+                  {skin.floatValue}
+                </span>
+                <span className="text-white/30">•</span>
+                <span>{skin.exterior}</span>
+                {skin.statTrak ? (
+                  <>
+                    <span className="text-white/30">•</span>
+                    <span>StatTrak™</span>
+                  </>
+                ) : null}
               </div>
             </div>
-          </>
+          </div>
         )}
       </div>
     </div>

@@ -5,7 +5,14 @@ export const metadata = {
   title: "Log in — Skynova",
 };
 
-export default function LoginPage() {
+export default function LoginPage({
+  searchParams,
+}: {
+  searchParams?: { next?: string };
+}) {
+  // Pass "next" to the client form so it can redirect after login
+  const nextUrl = searchParams?.next ?? "/";
+
   return (
     <main className="relative mt-12">
       {/* glow */}
@@ -16,7 +23,9 @@ export default function LoginPage() {
         <div className="mx-auto max-w-[520px]">
           {/* breadcrumb */}
           <div className="mb-6 text-sm text-white/60">
-            <Link href="/" className="hover:text-white">Home</Link>{" "}
+            <Link href="/" className="hover:text-white">
+              Home
+            </Link>{" "}
             <span className="text-white/30">/</span>{" "}
             <span className="text-white/80">Log in</span>
           </div>
@@ -39,7 +48,7 @@ export default function LoginPage() {
 
           {/* client form */}
           <div className="mt-6">
-            <LoginForm />
+            <LoginForm nextUrl={nextUrl} />
           </div>
 
           <div className="mt-6 text-center text-xs text-white/45">

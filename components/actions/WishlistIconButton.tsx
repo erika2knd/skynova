@@ -1,6 +1,7 @@
 "use client";
 
 import { useWishlist } from "@/context/wishlist-context";
+import { useRequireAuth } from "@/components/hooks/useRequireAuth";
 
 function HeartIcon({ active }: { active: boolean }) {
   return (
@@ -24,14 +25,21 @@ function HeartIcon({ active }: { active: boolean }) {
 
 export default function WishlistIconButton({ slug }: { slug: string }) {
   const { isInWishlist, toggle } = useWishlist();
+  const { requireAuth } = useRequireAuth();
+
   const active = isInWishlist(slug);
 
   return (
     <button
       type="button"
-      onClick={(e) => {
+      onClick={async (e) => {
         e.preventDefault();
         e.stopPropagation();
+
+        // Require auth before wishlist action
+        const ok = await requireAuth();
+        if (!ok) return;
+
         toggle(slug);
       }}
       aria-label={active ? "Remove from wishlist" : "Add to wishlist"}

@@ -1,16 +1,23 @@
 "use client";
 
 import { useCart } from "@/context/cart-context";
+import { useRequireAuth } from "@/components/hooks/useRequireAuth";
 
 export default function ProductAddToCartButton({ slug }: { slug: string }) {
   const { add } = useCart();
+  const { requireAuth } = useRequireAuth();
 
   return (
     <button
       type="button"
-      onClick={(e) => {
+      onClick={async (e) => {
         e.preventDefault();
         e.stopPropagation();
+
+        // Require auth before cart action
+        const ok = await requireAuth();
+        if (!ok) return;
+
         add(slug, 1);
       }}
       className="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-purple-500 to-indigo-500 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-purple-500/20 transition hover:brightness-110"
