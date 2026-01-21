@@ -3,9 +3,9 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 
 export async function GET(
   _req: Request,
-  { params }: { params: { slug: string } }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
-  const slug = params.slug;
+  const { slug } = await params;
 
   const { data, error } = await supabaseAdmin
     .from("skins")
@@ -23,7 +23,8 @@ export async function GET(
 
   const item = {
     ...data,
-    statTrak: (data as any).stattrak,
+    statTrak: Boolean((data as any).stattrak),
+    floatValue: (data as any).float_value ?? (data as any).floatValue ?? "",
   };
 
   return NextResponse.json({ item });
