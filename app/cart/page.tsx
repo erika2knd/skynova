@@ -1,9 +1,11 @@
 import Link from "next/link";
-import CartClient from "@/components/sections/CartClient";
+import dynamic from "next/dynamic";
 
-export const metadata = {
-  title: "Cart — Skynova",
-};
+export const metadata = { title: "Cart — Skynova" };
+
+const CartClient = dynamic(() => import("@/components/sections/CartClient"), {
+  ssr: false,
+});
 
 export default function CartPage() {
   return (
