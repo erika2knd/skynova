@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 dotenv.config({ path: ".env.local" });
-import { supabaseAdmin } from "@/lib/supabase/admin";
-import { demoSkins } from "@/components/data/demoSkins";
+import { supabaseAdmin } from "../lib/supabase/admin";
+import { demoSkins } from "../components/data/demoSkins";
 
 async function main() {
   const payload = demoSkins.map((s) => ({
