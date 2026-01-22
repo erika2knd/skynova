@@ -1,10 +1,7 @@
 import dotenv from "dotenv";
 dotenv.config({ path: ".env.local" });
-
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { demoSkins } from "@/components/data/demoSkins";
-
-
 
 async function main() {
   const payload = demoSkins.map((s) => ({
@@ -25,7 +22,7 @@ async function main() {
     stattrak: s.statTrak,
   }));
 
-  const { error } = await supabaseAdmin
+  const { error } = await supabaseAdmin()
     .from("skins")
     .upsert(payload, { onConflict: "slug" });
 
@@ -37,4 +34,7 @@ async function main() {
   console.log(`✅ Seeded ${payload.length} skins into Supabase`);
 }
 
-main();
+main().catch((err) => {
+  console.error("Seed crashed:", err);
+  process.exit(1);
+});
