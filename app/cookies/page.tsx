@@ -5,11 +5,7 @@ export const metadata = {
 };
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
-  return (
-    <h2 className="mt-10 text-xl font-extrabold text-white sm:text-2xl">
-      {children}
-    </h2>
-  );
+  return <h2 className="mt-10 text-xl font-extrabold text-white sm:text-2xl">{children}</h2>;
 }
 
 function P({ children }: { children: React.ReactNode }) {
@@ -63,63 +59,66 @@ export default function CookiesPolicyPage() {
         {/* Pet project disclaimer */}
         <div className="mt-8 rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur sm:p-8">
           <div className="text-sm font-extrabold text-white">Demo / Pet project notice</div>
+
           <P>
-            This website is a <span className="text-white/90 font-semibold">pet project</span>. Any
-            cookies mentioned below are used for demo functionality and learning purposes.
+            Skynova is a <span className="font-semibold text-white/90">portfolio pet project</span>.
+            This Cookies Policy page is included to mirror a real-world product structure and to
+            document potential cookie usage.
           </P>
+
+          <P>
+            The demo does <span className="font-semibold text-white/90">not</span> include a cookie
+            consent banner or advanced cookie management. However, the website may still use
+            technical storage mechanisms required for basic functionality.
+          </P>
+
           <ul className="mt-3">
-            <Li>No payments or real transactions are processed.</Li>
-            <Li>Demo analytics (if enabled) may set basic cookies.</Li>
+            <Li>No real payments or transactions are processed.</Li>
+            <Li>
+              Analytics and marketing cookies are{" "}
+              <span className="font-semibold text-white/90">not intentionally enabled</span> in the
+              demo (unless explicitly added later).
+            </Li>
           </ul>
         </div>
 
         <SectionTitle>1. What are cookies?</SectionTitle>
         <P>
-          Cookies are small text files stored on your device when you visit a website. They help
-          the site remember information about your visit (for example, your preferences).
+          Cookies are small text files stored on your device when you visit a website. They help a
+          site remember information about your visit (for example, your preferences).
         </P>
 
-        <SectionTitle>2. How we use cookies</SectionTitle>
+        <SectionTitle>2. What we use (or may use) in this demo</SectionTitle>
         <P>
-          In the current demo version, cookies may be used for:
+          In a demo environment, the website may use{" "}
+          <span className="font-semibold text-white/90">essential / technical cookies</span> or
+          similar storage mechanisms to support basic functionality, such as:
         </P>
         <ul className="mt-3">
-          <Li>Remembering UI preferences (e.g., theme, language, or filters if implemented).</Li>
-          <Li>Basic security and anti-abuse protections (if implemented).</Li>
-          <Li>Analytics (optional) to understand which pages are visited.</Li>
+          <Li>Keeping you signed in (authentication/session management, if applicable).</Li>
+          <Li>Basic security and anti-abuse protections.</Li>
+          <Li>Remembering UI state (for example, preferences or temporary selections).</Li>
         </ul>
 
-        <SectionTitle>3. Types of cookies</SectionTitle>
-        <P>Depending on what is enabled, the Website may use:</P>
-        <ul className="mt-3">
-          <Li>
-            <span className="text-white/85 font-semibold">Essential cookies</span> — required for
-            basic functionality (e.g., navigation, security).
-          </Li>
-          <Li>
-            <span className="text-white/85 font-semibold">Preference cookies</span> — remember your
-            settings (e.g., UI preferences).
-          </Li>
-          <Li>
-            <span className="text-white/85 font-semibold">Analytics cookies</span> — help measure
-            usage (optional).
-          </Li>
-        </ul>
+        <SectionTitle>3. Analytics and marketing cookies</SectionTitle>
+        <P>
+          This demo version is focused on UI/UX and architecture. Analytics and marketing cookies
+          are not intentionally enabled. If they are added in the future, this policy will be
+          updated and a consent mechanism may be implemented.
+        </P>
 
         <SectionTitle>4. Managing cookies</SectionTitle>
-        <P>
-          You can control cookies through your browser settings:
-        </P>
+        <P>You can control cookies through your browser settings:</P>
         <ul className="mt-3">
           <Li>Block all cookies (may affect website functionality).</Li>
           <Li>Delete existing cookies.</Li>
           <Li>Set rules per website.</Li>
         </ul>
 
-        <SectionTitle>5. Third-party cookies</SectionTitle>
+        <SectionTitle>5. Third-party services</SectionTitle>
         <P>
-          If third-party services are enabled (for example, analytics or embedded content), they may
-          set their own cookies. We do not control third-party cookies.
+          If third-party services are enabled later (for example, analytics providers or embedded
+          content), they may set their own cookies. We do not control third-party cookies.
         </P>
 
         <SectionTitle>6. Updates to this policy</SectionTitle>
@@ -130,8 +129,8 @@ export default function CookiesPolicyPage() {
 
         <SectionTitle>7. Contact</SectionTitle>
         <P>
-          If you have questions about cookies on this website, contact{" "}
-          <span className="text-white/90 font-semibold">support@skynova.com</span> (demo placeholder).
+          This is a demo project. If you have questions, you can use a placeholder contact:{" "}
+          <span className="font-semibold text-white/90">support@skynova.com</span>.
         </P>
 
         <div className="mt-12 flex flex-wrap gap-3">
