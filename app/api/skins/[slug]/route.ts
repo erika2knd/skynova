@@ -1,12 +1,12 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { mapSkin } from "@/lib/mappers/skin";
 
 export async function GET(
-  _req: Request,
-  { params }: { params: { slug: string } }
+  _req: NextRequest,
+  { params }: { params: Promise<{ slug: string }> }
 ) {
-  const slug = params.slug;
+  const { slug } = await params;
 
   const { data, error } = await supabaseAdmin()
     .from("skins")
