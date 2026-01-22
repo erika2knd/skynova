@@ -37,7 +37,7 @@ export default async function LoginPage({
           </h1>
 
           <p className="mt-3 text-sm text-white/70">
-            Sign in to use wishlist and cart (demo will become real).
+            Sign in to access wishlist and cart (demo marketplace).
           </p>
 
           <div className="mt-6">

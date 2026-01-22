@@ -26,14 +26,17 @@ export default function SignupPage() {
           </h1>
 
           <p className="mt-3 text-sm text-white/70">
-            Create a demo account to save wishlist items later (UI only for now).
+           Create an account to use wishlist and cart features.
+
           </p>
 
           {/* Pet project notice */}
           <div className="mt-6 rounded-3xl border border-white/10 bg-white/5 p-5 backdrop-blur">
             <div className="text-sm font-extrabold text-white">Demo / Pet project notice</div>
             <p className="mt-2 text-sm leading-relaxed text-white/70">
-              This is a portfolio project. Registration is not connected to a real backend yet.
+             
+This is a portfolio project.
+Authentication is real, but features like checkout and orders are demo-only.
             </p>
           </div>
 
