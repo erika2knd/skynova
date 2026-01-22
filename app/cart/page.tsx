@@ -1,7 +1,10 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import CartClient from "@/components/sections/CartClient";
 
-export const metadata = {
+export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
   title: "Cart — Skynova",
 };
 
@@ -32,7 +35,9 @@ export default function CartPage() {
 
         {/* Pet project notice */}
         <div className="mt-6 rounded-3xl border border-white/10 bg-white/5 p-5 backdrop-blur">
-          <div className="text-sm font-extrabold text-white">Demo / Pet project notice</div>
+          <div className="text-sm font-extrabold text-white">
+            Demo / Pet project notice
+          </div>
           <p className="mt-2 text-sm leading-relaxed text-white/70">
             No real payments or orders. This page is for UI/UX demonstration.
           </p>
