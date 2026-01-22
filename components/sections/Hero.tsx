@@ -14,7 +14,7 @@ type LiveSkinRow = {
 
 async function fetchLiveFeedSkins(limit = 6) {
   // Fetch latest skins for the "Live feed" row (server-side)
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await supabaseAdmin ()
     .from("skins")
     .select("id, slug, price, image, created_at")
     .order("created_at", { ascending: false })

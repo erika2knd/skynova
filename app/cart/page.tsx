@@ -1,23 +1,23 @@
 import Link from "next/link";
-import dynamic from "next/dynamic";
+import CartClient from "@/components/sections/CartClient";
 
-export const metadata = { title: "Cart — Skynova" };
-
-const CartClient = dynamic(() => import("@/components/sections/CartClient"), {
-  ssr: false,
-});
+export const metadata = {
+  title: "Cart — Skynova",
+};
 
 export default function CartPage() {
   return (
     <main className="relative mt-12">
-      {/* glow */}
+      {/* Decorative glow */}
       <div className="pointer-events-none absolute left-[-120px] top-[-140px] h-[420px] w-[420px] rounded-full bg-purple-600/25 blur-3xl" />
       <div className="pointer-events-none absolute right-[-160px] top-[240px] h-[520px] w-[520px] rounded-full bg-indigo-500/20 blur-3xl" />
 
       <div className="mx-auto max-w-[1240px] px-6 py-12 lg:px-24 lg:py-16">
-        {/* breadcrumb */}
+        {/* Breadcrumb */}
         <div className="mb-6 text-sm text-white/60">
-          <Link href="/" className="hover:text-white">Home</Link>{" "}
+          <Link href="/" className="hover:text-white">
+            Home
+          </Link>{" "}
           <span className="text-white/30">/</span>{" "}
           <span className="text-white/80">Cart</span>
         </div>

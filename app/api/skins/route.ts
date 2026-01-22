@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { mapSkin } from "@/lib/mappers/skin";
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -22,7 +23,7 @@ export async function GET(req: Request) {
   const from = offset;
   const to = offset + limit - 1;
 
-  let queryBuilder = supabaseAdmin
+  let queryBuilder = supabaseAdmin()
     .from("skins")
     .select("*", { count: "exact" });
 
@@ -63,23 +64,22 @@ export async function GET(req: Request) {
   }
 
   /* -------- SORT -------- */
- switch (sort) {
-  case "Price: low":
-    queryBuilder = queryBuilder.order("price", { ascending: true });
-    break;
-  case "Price: high":
-    queryBuilder = queryBuilder.order("price", { ascending: false });
-    break;
-  case "Best deal":
-    queryBuilder = queryBuilder.order("discount", { ascending: true });
-    break;
-  case "Newest":
-    queryBuilder = queryBuilder.order("created_at", { ascending: false });
-    break;
-  default:
-    queryBuilder = queryBuilder.order("created_at", { ascending: false });
-}
-
+  switch (sort) {
+    case "Price: low":
+      queryBuilder = queryBuilder.order("price", { ascending: true });
+      break;
+    case "Price: high":
+      queryBuilder = queryBuilder.order("price", { ascending: false });
+      break;
+    case "Best deal":
+      queryBuilder = queryBuilder.order("discount", { ascending: true });
+      break;
+    case "Newest":
+      queryBuilder = queryBuilder.order("created_at", { ascending: false });
+      break;
+    default:
+      queryBuilder = queryBuilder.order("created_at", { ascending: false });
+  }
 
   // apply pagination
   const { data, error, count } = await queryBuilder.range(from, to);
@@ -89,19 +89,12 @@ export async function GET(req: Request) {
     return NextResponse.json({ items: [], total: 0, limit, offset }, { status: 500 });
   }
 
-  // Normalize DB fields for frontend usage
-const items =
-  (data ?? []).map((item) => ({
-    ...item,
-    // Convert snake/lowercase DB field to camelCase for UI
-    statTrak: item.stattrak,
-  })) ?? [];
+  const items = (data ?? []).map(mapSkin);
 
-return NextResponse.json({
-  items,
-  total: count ?? 0,
-  limit,
-  offset,
-});
-
+  return NextResponse.json({
+    items,
+    total: count ?? 0,
+    limit,
+    offset,
+  });
 }

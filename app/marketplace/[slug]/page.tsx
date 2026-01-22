@@ -1,4 +1,3 @@
-
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -41,10 +40,11 @@ type Skin = {
 };
 
 function mapSkin(row: SkinRow): Skin {
+  // Normalize DB fields to frontend-friendly shape
   return {
     ...row,
     floatValue: row.float_value,
-    statTrak: row.stattrak,
+    statTrak: Boolean(row.stattrak),
   };
 }
 
@@ -66,13 +66,15 @@ function StatRow({ label, value }: { label: string; value: React.ReactNode }) {
 }
 
 async function fetchSkinBySlug(slug: string): Promise<Skin> {
-  const { data, error } = await supabaseAdmin
+  // Use admin client (server-only)
+  const { data, error } = await supabaseAdmin()
     .from("skins")
     .select("*")
     .eq("slug", slug)
     .maybeSingle<SkinRow>();
 
   if (error) {
+  
     throw new Error("Failed to fetch skin");
   }
 
@@ -82,7 +84,7 @@ async function fetchSkinBySlug(slug: string): Promise<Skin> {
 }
 
 async function fetchSimilarItems(category: string, currentSlug: string): Promise<Skin[]> {
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await supabaseAdmin()
     .from("skins")
     .select("*")
     .eq("category", category)
@@ -100,13 +102,13 @@ export default async function ProductPage({
   params,
   searchParams,
 }: {
-  params: Promise<{ slug: string }>;
-  searchParams?: Promise<{ currency?: string }>;
+  params: { slug: string };
+  searchParams?: { currency?: string };
 }) {
-  const { slug } = await params;
+  const slug = params.slug;
 
-  const sp = (await searchParams) ?? {};
-  const currency = sp.currency === "eur" ? "eur" : "usd";
+  // Read currency from the URL query
+  const currency = searchParams?.currency === "eur" ? "eur" : "usd";
   const rate = currency === "eur" ? 0.92 : 1;
   const symbol = currency === "eur" ? "€" : "$";
 
@@ -136,7 +138,7 @@ export default async function ProductPage({
         </div>
 
         <section className="grid gap-6 lg:grid-cols-12">
-          {/* left */}
+          {/* Left */}
           <div className="lg:col-span-7">
             <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-[#222326] backdrop-blur">
               <div className="relative p-6 sm:p-8">
@@ -158,16 +160,15 @@ export default async function ProductPage({
                 </div>
 
                 <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
-  <StatRow label="Float" value={skin.floatValue} />
-  <StatRow label="Discount" value={`${skin.discount}%`} />
-  <StatRow label="StatTrak" value={skin.statTrak ? "Yes" : "No"} />
-</div>
-
+                  <StatRow label="Float" value={skin.floatValue} />
+                  <StatRow label="Discount" value={`${skin.discount}%`} />
+                  <StatRow label="StatTrak" value={skin.statTrak ? "Yes" : "No"} />
+                </div>
               </div>
             </div>
           </div>
 
-          {/* right */}
+          {/* Right */}
           <div className="lg:col-span-5">
             <div className="rounded-3xl border border-white/10 bg-[#222326] p-6 backdrop-blur sm:p-8">
               <h1 className="text-2xl font-extrabold tracking-tight text-white sm:text-3xl">
@@ -194,7 +195,6 @@ export default async function ProductPage({
                 </div>
 
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                  {/* These buttons can remain as-is  */}
                   <ProductAddToCartButton slug={skin.slug} />
                   <ProductWishlistButton slug={skin.slug} />
                 </div>
@@ -215,7 +215,10 @@ export default async function ProductPage({
           <div className="mb-5 flex items-end justify-between gap-4">
             <h2 className="text-xl font-extrabold text-white sm:text-2xl">Similar items</h2>
 
-            <Link href="/marketplace" className="text-sm font-semibold text-white/70 hover:text-white">
+            <Link
+              href="/marketplace"
+              className="text-sm font-semibold text-white/70 hover:text-white"
+            >
               Back to Marketplace →
             </Link>
           </div>
@@ -229,17 +232,17 @@ export default async function ProductPage({
               >
                 <div className="animated-border rounded-2xl bg-gradient-to-r from-[#535EFE] via-[#680BE2] to-[#535EFE] p-[1px]">
                   <div className="relative overflow-hidden rounded-2xl bg-[#1F2023] p-4 backdrop-blur">
-                    {/* glow on hover */}
+                    {/* Hover glow */}
                     <div className="pointer-events-none absolute inset-0 opacity-0 transition group-hover:opacity-100">
                       <div className="absolute inset-0 bg-gradient-to-br from-purple-500/15 via-transparent to-indigo-500/15" />
                     </div>
 
-                    {/* wishlist */}
+                    {/* Wishlist */}
                     <div className="absolute right-3 top-3 z-10">
                       <WishlistIconButton slug={item.slug} />
                     </div>
 
-                    {/* content */}
+                    {/* Content */}
                     <div className="relative">
                       <div className="mb-3 flex items-center gap-2">
                         {item.statTrak && <Chip>StatTrak™</Chip>}
