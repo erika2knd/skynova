@@ -3,6 +3,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { demoSkins } from "@/components/data/demoSkins";
+
 import ProductWishlistButton from "@/components/actions/ProductWishlistButton";
 import ProductAddToCartButton from "@/components/actions/ProductAddToCartButton";
 import WishlistIconButton from "@/components/actions/WishlistIconButton";
@@ -19,8 +21,8 @@ type SkinRow = {
   price: number;
   discount: number;
   exterior: string;
-  float_value: string;
-  stattrak: boolean;
+  float_value: string | null;
+  stattrak: boolean | null;
 };
 
 type Skin = {
@@ -40,11 +42,28 @@ type Skin = {
 };
 
 function mapSkin(row: SkinRow): Skin {
-  // Normalize DB fields to frontend-friendly shape
   return {
     ...row,
-    floatValue: row.float_value,
+    floatValue: row.float_value ?? "",
     statTrak: Boolean(row.stattrak),
+  };
+}
+
+function mapDemoSkin(s: any): Skin {
+  return {
+    id: s.id ?? s.slug,
+    slug: s.slug,
+    weapon: s.weapon,
+    skin: s.skin,
+    collection: s.collection,
+    category: s.category,
+    image: s.image,
+    icon: s.icon,
+    price: s.price,
+    discount: s.discount,
+    exterior: s.exterior,
+    floatValue: s.floatValue ?? "",
+    statTrak: Boolean(s.statTrak),
   };
 }
 
@@ -66,7 +85,7 @@ function StatRow({ label, value }: { label: string; value: React.ReactNode }) {
 }
 
 async function fetchSkinBySlug(slug: string): Promise<Skin> {
-  // Use admin client (server-only)
+  // 1) Try DB first
   const { data, error } = await supabaseAdmin()
     .from("skins")
     .select("*")
@@ -74,16 +93,21 @@ async function fetchSkinBySlug(slug: string): Promise<Skin> {
     .maybeSingle<SkinRow>();
 
   if (error) {
-  
-    throw new Error("Failed to fetch skin");
+    console.error("fetchSkinBySlug DB error:", error);
   }
 
-  if (!data) notFound();
+  if (data) return mapSkin(data);
 
-  return mapSkin(data);
+  // 2) Fallback to demo data (pet-project friendly)
+  const fromDemo = demoSkins.find((s: any) => s.slug === slug);
+  if (fromDemo) return mapDemoSkin(fromDemo);
+
+  // 3) Still nothing -> 404
+  notFound();
 }
 
 async function fetchSimilarItems(category: string, currentSlug: string): Promise<Skin[]> {
+  // Try DB first
   const { data, error } = await supabaseAdmin()
     .from("skins")
     .select("*")
@@ -93,22 +117,29 @@ async function fetchSimilarItems(category: string, currentSlug: string): Promise
     .limit(6)
     .returns<SkinRow[]>();
 
-  if (error || !data) return [];
+  if (!error && data?.length) {
+    return data.map(mapSkin).slice(0, 4);
+  }
 
-  return data.map(mapSkin).slice(0, 4);
+  // Fallback to demo data
+  return demoSkins
+    .filter((s: any) => s.category === category && s.slug !== currentSlug)
+    .slice(0, 4)
+    .map(mapDemoSkin);
 }
 
 export default async function ProductPage({
   params,
   searchParams,
 }: {
-  params: { slug: string };
-  searchParams?: { currency?: string };
+  params: Promise<{ slug: string }>;
+  searchParams?: Promise<{ currency?: string }>;
 }) {
-  const slug = params.slug;
+  const { slug } = await params;
 
-  // Read currency from the URL query
-  const currency = searchParams?.currency === "eur" ? "eur" : "usd";
+  // Next 16+: searchParams can be a Promise
+  const sp = (await searchParams) ?? {};
+  const currency = sp.currency === "eur" ? "eur" : "usd";
   const rate = currency === "eur" ? 0.92 : 1;
   const symbol = currency === "eur" ? "€" : "$";
 
@@ -171,9 +202,7 @@ export default async function ProductPage({
           {/* Right */}
           <div className="lg:col-span-5">
             <div className="rounded-3xl border border-white/10 bg-[#222326] p-6 backdrop-blur sm:p-8">
-              <h1 className="text-2xl font-extrabold tracking-tight text-white sm:text-3xl">
-                {name}
-              </h1>
+              <h1 className="text-2xl font-extrabold tracking-tight text-white sm:text-3xl">{name}</h1>
 
               <p className="mt-2 text-sm text-white/60">
                 The ultimate marketplace for Counter-Strike skins — buy and sell with ease.
@@ -183,9 +212,7 @@ export default async function ProductPage({
                 <div className="flex items-end justify-between gap-4">
                   <div>
                     <div className="text-sm text-white/60">Price</div>
-                    <div className="mt-1 text-3xl font-extrabold text-white">
-                      {money(skin.price)}
-                    </div>
+                    <div className="mt-1 text-3xl font-extrabold text-white">{money(skin.price)}</div>
                   </div>
 
                   <div className="text-right text-xs text-white/50">
@@ -215,10 +242,7 @@ export default async function ProductPage({
           <div className="mb-5 flex items-end justify-between gap-4">
             <h2 className="text-xl font-extrabold text-white sm:text-2xl">Similar items</h2>
 
-            <Link
-              href="/marketplace"
-              className="text-sm font-semibold text-white/70 hover:text-white"
-            >
+            <Link href="/marketplace" className="text-sm font-semibold text-white/70 hover:text-white">
               Back to Marketplace →
             </Link>
           </div>
@@ -277,4 +301,5 @@ export default async function ProductPage({
     </main>
   );
 }
+
 

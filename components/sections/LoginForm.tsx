@@ -5,16 +5,10 @@ import { useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase/browser";
 
 function sanitizeNextUrl(nextUrl: string) {
-  // Security: only allow internal paths
   if (!nextUrl) return "/";
-
   try {
     const decoded = decodeURIComponent(nextUrl);
-
-    // Only allow relative paths like "/marketplace/xxx"
-    if (decoded.startsWith("/")) return decoded;
-
-    return "/";
+    return decoded.startsWith("/") ? decoded : "/";
   } catch {
     return "/";
   }
@@ -25,21 +19,21 @@ export default function LoginForm({ nextUrl }: { nextUrl: string }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // TODO: replace with your real form fields
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (loading) return;
+
     setError("");
     setLoading(true);
 
     try {
       const supabase = supabaseBrowser();
 
-      // Example: Supabase email/password login
       const { error } = await supabase.auth.signInWithPassword({
-        email,
+        email: email.trim().toLowerCase(),
         password,
       });
 
@@ -48,10 +42,10 @@ export default function LoginForm({ nextUrl }: { nextUrl: string }) {
         return;
       }
 
-      // Redirect back to the original page
       const safeNext = sanitizeNextUrl(nextUrl);
       router.replace(safeNext);
-    } catch (err: any) {
+      router.refresh();
+    } catch {
       setError("Login failed. Please try again.");
     } finally {
       setLoading(false);
@@ -60,19 +54,22 @@ export default function LoginForm({ nextUrl }: { nextUrl: string }) {
 
   return (
     <form onSubmit={onSubmit} className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur">
-      {/* Replace with your current UI */}
       <div className="space-y-3">
         <input
+          required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="Email"
+          autoComplete="email"
           className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none"
         />
         <input
+          required
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           placeholder="Password"
           type="password"
+          autoComplete="current-password"
           className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none"
         />
 

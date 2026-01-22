@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { supabaseBrowser } from "@/lib/supabase/browser";
 
 function Input({
   label,
@@ -40,7 +42,6 @@ function Input({
 function PasswordStrength({ value }: { value: string }) {
   const score =
     value.length >= 10 ? 3 : value.length >= 8 ? 2 : value.length >= 6 ? 1 : 0;
-
   const label = score === 3 ? "Strong" : score === 2 ? "Good" : score === 1 ? "Ok" : "Too short";
 
   return (
@@ -52,12 +53,17 @@ function PasswordStrength({ value }: { value: string }) {
 }
 
 export default function SignupForm() {
+  const router = useRouter();
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [agree, setAgree] = useState(true);
   const [show, setShow] = useState(false);
+
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   const canSubmit = useMemo(() => {
     const okEmail = email.trim().includes("@");
@@ -67,32 +73,50 @@ export default function SignupForm() {
     return okEmail && okUser && okPass && same && agree;
   }, [email, username, password, confirm, agree]);
 
-  const onSubmit = (e: React.FormEvent) => {
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    alert("Demo: sign up is not connected yet 🙂");
+    if (!canSubmit) return;
+
+    setError("");
+    setSuccess("");
+    setLoading(true);
+
+    try {
+      const supabase = supabaseBrowser();
+
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { username }, 
+        },
+      });
+
+      if (error) {
+        setError(error.message);
+        return;
+      }
+
+      if (!data.session) {
+        setSuccess("Check your email to confirm your account.");
+        return;
+      }
+
+      setSuccess("Account created! Redirecting…");
+      router.replace("/");
+      router.refresh();
+    } catch {
+      setError("Sign up failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <form
-      onSubmit={onSubmit}
-      className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur sm:p-8"
-    >
+    <form onSubmit={onSubmit} className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur sm:p-8">
       <div className="space-y-4">
-        <Input
-          label="Username"
-          type="text"
-          value={username}
-          onChange={setUsername}
-          placeholder="Your nickname"
-        />
-
-        <Input
-          label="Email"
-          type="email"
-          value={email}
-          onChange={setEmail}
-          placeholder="you@example.com"
-        />
+        <Input label="Username" type="text" value={username} onChange={setUsername} placeholder="Your nickname" />
+        <Input label="Email" type="email" value={email} onChange={setEmail} placeholder="you@example.com" />
 
         <Input
           label="Password"
@@ -133,29 +157,29 @@ export default function SignupForm() {
               Terms
             </Link>{" "}
             and{" "}
-            <Link
-              href="/privacy-policy"
-              className="text-white/80 underline decoration-white/30 hover:text-white"
-            >
+            <Link href="/privacy-policy" className="text-white/80 underline decoration-white/30 hover:text-white">
               Privacy Policy
             </Link>
             .
           </span>
         </label>
 
+        {error ? <p className="text-sm text-red-300">{error}</p> : null}
+        {success ? <p className="text-sm text-green-300">{success}</p> : null}
+
         <button
           type="submit"
-          disabled={!canSubmit}
+          disabled={!canSubmit || loading}
           className={`
             w-full rounded-2xl px-5 py-3 text-sm font-semibold text-white transition
             ${
-              canSubmit
+              canSubmit && !loading
                 ? "bg-gradient-to-r from-purple-500 to-indigo-500 shadow-lg shadow-purple-500/20 hover:brightness-110"
                 : "bg-gradient-to-r from-purple-500/40 to-indigo-500/40 opacity-60 cursor-not-allowed"
             }
           `}
         >
-          Create account
+          {loading ? "Creating…" : "Create account"}
         </button>
 
         <div className="text-center text-sm text-white/60">
