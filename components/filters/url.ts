@@ -12,38 +12,32 @@ export function parseFiltersFromSearchParams(sp: URLSearchParams): Filters {
   const priceMax = sp.get("max") ?? "";
 
   const st = sp.get("st") ?? "any";
-  const statTrak: Filters["statTrak"] =
-    st === "only" || st === "without" ? st : "any";
+  const statTrak: Filters["statTrak"] = st === "only" || st === "without" ? st : "any";
 
-  const ex = sp.get("ex") ?? ""; // e.g. Factory%20New,Minimal%20Wear
-  const exterior = ex
-    ? ex.split(",").map((v) => decodeURIComponent(v)).filter(Boolean)
-    : [];
+  const ex = sp.get("ex") ?? ""; 
+  const exterior = ex ? ex.split(",").map((v) => v.trim()).filter(Boolean) : [];
 
   return { priceMin, priceMax, exterior, statTrak };
 }
 
 export function writeFiltersToSearchParams(sp: URLSearchParams, filters: Filters) {
-  // min/max
   if (filters.priceMin.trim()) sp.set("min", filters.priceMin.trim());
   else sp.delete("min");
 
   if (filters.priceMax.trim()) sp.set("max", filters.priceMax.trim());
   else sp.delete("max");
 
-  // stattrak
   if (filters.statTrak !== "any") sp.set("st", filters.statTrak);
   else sp.delete("st");
 
-  // exterior
   if (filters.exterior.length > 0) {
-    sp.set("ex", filters.exterior.map((x) => encodeURIComponent(x)).join(","));
+    sp.set("ex", filters.exterior.map((x) => x.trim()).filter(Boolean).join(","));
   } else {
     sp.delete("ex");
   }
 }
 
-export const DEFAULT_CATEGORY = "Rifles"; 
+export const DEFAULT_CATEGORY = "All";
 
 export function parseCategoryFromSearchParams(sp: URLSearchParams): string {
   return sp.get("cat") ?? DEFAULT_CATEGORY;
@@ -99,10 +93,9 @@ export function parseViewFromSearchParams(sp: URLSearchParams): ViewKey {
 }
 
 export function writeViewToSearchParams(sp: URLSearchParams, view: ViewKey) {
-  if (view === "grid") sp.delete("view"); 
+  if (view === "grid") sp.delete("view");
   else sp.set("view", view);
 }
-
 
 
 

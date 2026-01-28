@@ -6,7 +6,7 @@ import type { Skin } from "@/components/data/demoSkins";
 
 import FilterDrawer from "@/components/filters/FilterDrawer";
 import type { Filters } from "@/components/filters/types";
-import { DEFAULT_FILTERS } from "@/components/filters/url";
+import { DEFAULT_FILTERS, DEFAULT_SORT, type SortKey } from "@/components/filters/url";
 
 const PAGE_SIZE = 20;
 
@@ -37,16 +37,21 @@ export default function MarketplaceClient() {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
 
+  const [error, setError] = useState<string | null>(null);
+
   const [activeCategory, setActiveCategory] = useState("All");
-  const [sort, setSort] = useState("Best deal");
+
+  // ✅ SortKey instead of UI strings
+  const [sort, setSort] = useState<SortKey>(DEFAULT_SORT);
+
   const [query, setQuery] = useState("");
   const [currency, setCurrency] = useState<"usd" | "eur">("usd");
   const [view, setView] = useState<"grid" | "list">("grid");
 
-  // applied filters 
+  // applied filters
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
 
-  // draft filters 
+  // draft filters
   const [draftFilters, setDraftFilters] = useState<Filters>(DEFAULT_FILTERS);
 
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -70,13 +75,11 @@ export default function MarketplaceClient() {
     setIsFilterOpen(false);
   };
 
-    const onClearFilters = () => {
-    // Clear both draft and applied filters, and close the drawer if it's open
+  const onClearFilters = () => {
     setDraftFilters(DEFAULT_FILTERS);
     setFilters(DEFAULT_FILTERS);
     setIsFilterOpen(false);
   };
-
 
   const [debouncedQuery, setDebouncedQuery] = useState(query);
   useEffect(() => {
@@ -90,6 +93,7 @@ export default function MarketplaceClient() {
     if (debouncedQuery.trim()) params.set("q", debouncedQuery.trim());
     if (activeCategory && activeCategory !== "All") params.set("category", activeCategory);
 
+    // ✅ send stable sort keys
     params.set("sort", sort);
 
     if (filters.statTrak !== "any") params.set("statTrak", filters.statTrak);
@@ -115,32 +119,59 @@ export default function MarketplaceClient() {
     const params = new URLSearchParams(baseParams);
     params.set("offset", String(offset));
 
-    const res = await fetch(`/api/skins?${params.toString()}`, { signal: controller.signal });
-    if (!res.ok) throw new Error("Failed to fetch skins");
+    let res: Response;
+
+    try {
+      res = await fetch(`/api/skins?${params.toString()}`, {
+        signal: controller.signal,
+      });
+    } catch (err: any) {
+      if (err?.name === "AbortError") return;
+      throw err;
+    }
+
+    if (!res.ok) {
+      throw new Error(`Failed to fetch skins (${res.status})`);
+    }
 
     const json: { items: Skin[]; total: number; limit: number; offset: number } = await res.json();
 
-    if (mode === "replace") {
-      setItems(json.items ?? []);
-    } else {
-      setItems((prev) => [...prev, ...(json.items ?? [])]);
-    }
+    if (mode === "replace") setItems(json.items ?? []);
+    else setItems((prev) => [...prev, ...(json.items ?? [])]);
 
     setTotal(json.total ?? 0);
   }
+
+  const retry = async () => {
+    setError(null);
+    setLoading(true);
+    try {
+      await fetchPage(0, "replace");
+    } catch (err: any) {
+      if (err?.name !== "AbortError") {
+        console.error("Marketplace retry error:", err);
+        setError("Couldn’t load items. Check your connection or disable ad blocker.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
 
     async function loadFirst() {
       setLoading(true);
+      setError(null);
+
       try {
         await fetchPage(0, "replace");
       } catch (err: any) {
-        if (err?.name !== "AbortError") console.error("Marketplace fetch error:", err);
+        if (err?.name === "AbortError") return;
+        console.error("Marketplace fetch error:", err);
+
         if (!cancelled) {
-          setItems([]);
-          setTotal(0);
+          setError("Couldn’t load items. Check your connection or disable ad blocker.");
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -161,63 +192,53 @@ export default function MarketplaceClient() {
     if (!canLoadMore || loadingMore) return;
 
     setLoadingMore(true);
+    setError(null);
+
     try {
       await fetchPage(items.length, "append");
     } catch (err: any) {
-      if (err?.name !== "AbortError") console.error("Load more error:", err);
+      if (err?.name === "AbortError") return;
+      console.error("Load more error:", err);
+      setError("Couldn’t load more items. Please try again.");
     } finally {
       setLoadingMore(false);
     }
   };
 
-  // Count active filter groups (used for UI indicator)
-const activeFilterCount = useMemo(() => {
-  let count = 0;
-
-  // Price filter is active if min or max is set
-  if (filters.priceMin.trim() || filters.priceMax.trim()) {
-    count += 1;
-  }
-
-  // Exterior filter is active if at least one value is selected
-  if (filters.exterior.length > 0) {
-    count += 1;
-  }
-
-  // StatTrak filter is active if not set to "any"
-  if (filters.statTrak !== "any") {
-    count += 1;
-  }
-
-  return count;
-}, [filters]);
-
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (filters.priceMin.trim() || filters.priceMax.trim()) count += 1;
+    if (filters.exterior.length > 0) count += 1;
+    if (filters.statTrak !== "any") count += 1;
+    return count;
+  }, [filters]);
 
   return (
     <>
       <MarketplaceGrid
-  items={items}
-  total={total}
-  loading={loading}
-  loadingMore={loadingMore}
-  canLoadMore={canLoadMore}
-  onLoadMore={onLoadMore}
-  filters={filters}
-  activeFilterCount={activeFilterCount}
-  onOpenFilters={onOpenFilters}
-  onClearFilters={onClearFilters}
-  activeCategory={activeCategory}
-  onCategoryChange={setActiveCategory}
-  sort={sort}
-  onSortChange={setSort}
-  query={query}
-  onQueryChange={setQuery}
-  currency={currency}
-  onCurrencyChange={setCurrency}
-  view={view}
-  onViewChange={setView}
-/>
-
+        items={items}
+        total={total}
+        loading={loading}
+        loadingMore={loadingMore}
+        canLoadMore={canLoadMore}
+        onLoadMore={onLoadMore}
+        filters={filters}
+        activeFilterCount={activeFilterCount}
+        onOpenFilters={onOpenFilters}
+        onClearFilters={onClearFilters}
+        activeCategory={activeCategory}
+        onCategoryChange={setActiveCategory}
+        sort={sort}
+        onSortChange={setSort}
+        query={query}
+        onQueryChange={setQuery}
+        currency={currency}
+        onCurrencyChange={setCurrency}
+        view={view}
+        onViewChange={setView}
+        error={error}
+        onRetry={retry}
+      />
 
       <FilterDrawer
         open={isFilterOpen}

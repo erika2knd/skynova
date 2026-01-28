@@ -1,13 +1,16 @@
-export type SkinRow = Record<string, any>;
+export type SkinRow = Record<string, unknown>;
 
-export function mapSkin(row: SkinRow) {
+export type SkinMapped<T extends SkinRow = SkinRow> = T & {
+  statTrak: boolean;
+  floatValue: string | null;
+};
+
+export function mapSkin<T extends SkinRow>(row: T): SkinMapped<T> {
   return {
-    ...row,
+    ...(row as T),
 
-    // Canonical UI fields
-    statTrak: Boolean(row.stattrak ?? row.statTrak),
+    statTrak: Boolean((row as any).stattrak ?? (row as any).statTrak),
 
-    // Float value may exist as snake_case in DB
-    floatValue: row.float_value ?? row.floatValue ?? null,
+    floatValue: ((row as any).float_value ?? (row as any).floatValue ?? null) as string | null,
   };
 }

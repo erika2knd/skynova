@@ -3,16 +3,22 @@
 import Image from "next/image";
 import Link from "next/link";
 
-// We only import the Skin type from demoSkins now (no categories from demo data)
 import type { Skin } from "@/components/data/demoSkins";
+import type { SortKey } from "@/components/filters/url";
 
 import WishlistIconButton from "../actions/WishlistIconButton";
 import SkeletonSkinCard from "../ui/SkeletonSkinCard";
 
 const MARKETPLACE_CATEGORIES = ["All", "Rifles", "Pistols", "Knives", "Gloves"] as const;
 
-const sortOptions = ["Best deal", "Newest", "Price: low", "Price: high"];
-const currencyOptions = ["USD", "EUR"];
+const SORT_OPTIONS: Array<{ value: SortKey; label: string }> = [
+  { value: "best", label: "Best deal" },
+  { value: "newest", label: "Newest" },
+  { value: "price_low", label: "Price: low" },
+  { value: "price_high", label: "Price: high" },
+];
+
+const currencyOptions = ["USD", "EUR"] as const;
 
 type Filters = {
   priceMin: string;
@@ -37,8 +43,9 @@ type MarketplaceGridProps = {
   activeCategory: string;
   onCategoryChange: (next: string) => void;
 
-  sort: string;
-  onSortChange: (v: string) => void;
+  // ✅ now uses SortKey
+  sort: SortKey;
+  onSortChange: (v: SortKey) => void;
 
   query: string;
   onQueryChange: (v: string) => void;
@@ -49,8 +56,10 @@ type MarketplaceGridProps = {
   view: "grid" | "list";
   onViewChange: (v: "grid" | "list") => void;
 
-  // Clears all applied filters (price/exterior/stattrak) from the toolbar
   onClearFilters: () => void;
+
+  error?: string | null;
+  onRetry?: () => void;
 };
 
 export default function MarketplaceGrid({
@@ -75,9 +84,13 @@ export default function MarketplaceGrid({
   onCurrencyChange,
   view,
   onViewChange,
+
+  error,
+  onRetry,
 }: MarketplaceGridProps) {
   const rate = currency === "eur" ? 0.92 : 1;
   const symbol = currency === "eur" ? "€" : "$";
+  const currencyQuery = currency === "eur" ? "?currency=eur" : "";
 
   const money = (v: number) => {
     const converted = Math.round(v * rate);
@@ -117,10 +130,8 @@ export default function MarketplaceGrid({
               onClick={onOpenFilters}
               className="relative rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/85 transition hover:bg-white/10"
             >
-              {/* Filter button label */}
               <span>Filter</span>
 
-              {/* Active filters count badge */}
               {activeFilterCount > 0 && (
                 <span className="ml-2 inline-flex min-w-[20px] items-center justify-center rounded-full bg-[#535EFE] px-1.5 text-xs font-semibold text-white">
                   {activeFilterCount}
@@ -128,25 +139,24 @@ export default function MarketplaceGrid({
               )}
             </button>
 
-            {/* Show "Clear" only when there are active filters */}
             {activeFilterCount > 0 && (
               <button
                 type="button"
                 onClick={onClearFilters}
                 className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/70 transition hover:bg-white/10 hover:text-white"
               >
-                {/* Clear all applied filters */}
                 Clear
               </button>
             )}
           </div>
 
-          <Select value={sort} onChange={onSortChange} options={sortOptions} />
+          {/* ✅ Sort select now uses SortKey */}
+          <SelectSort value={sort} onChange={onSortChange} />
 
           <Select
             value={currency === "usd" ? "USD" : "EUR"}
             onChange={(v) => onCurrencyChange(v === "EUR" ? "eur" : "usd")}
-            options={currencyOptions}
+            options={[...currencyOptions]}
           />
 
           <div className="flex min-w-[220px] flex-1 items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2">
@@ -188,6 +198,22 @@ export default function MarketplaceGrid({
           </div>
         </div>
 
+        {!loading && error ? (
+          <div className="mt-6 rounded-2xl border border-red-500/20 bg-red-500/10 p-8 text-center text-white/80">
+            <p className="font-semibold">{error}</p>
+
+            {onRetry ? (
+              <button
+                type="button"
+                onClick={onRetry}
+                className="mt-4 rounded-xl border border-white/10 bg-white/10 px-4 py-2 text-sm transition hover:bg-white/15"
+              >
+                Retry
+              </button>
+            ) : null}
+          </div>
+        ) : null}
+
         <div
           className={`mt-6 grid gap-5 ${
             view === "grid"
@@ -200,7 +226,7 @@ export default function MarketplaceGrid({
             : items.map((skin) => (
                 <Link
                   key={skin.id}
-                  href={`/marketplace/${skin.slug}`}
+                  href={`/marketplace/${skin.slug}${currencyQuery}`}
                   className="block cursor-pointer transition-transform hover:scale-[1.01]"
                 >
                   <SkinCard skin={skin} money={money} view={view} />
@@ -208,7 +234,7 @@ export default function MarketplaceGrid({
               ))}
         </div>
 
-        {!loading && items.length === 0 ? (
+        {!loading && !error && items.length === 0 ? (
           <div className="mt-10 rounded-2xl border border-white/10 bg-white/5 p-8 text-center text-white/70">
             No results found. Try changing filters or search query.
           </div>
@@ -270,6 +296,9 @@ function SkinCard({
   money: (v: number) => string;
   view: "grid" | "list";
 }) {
+  const iconSrc = skin.icon || "/images/fire.svg";
+  const imageSrc = skin.image || "/images/placeholder.png";
+
   return (
     <div className="animated-border rounded-3xl bg-gradient-to-r from-[#535EFE] via-[#680BE2] to-[#535EFE] p-[1px]">
       <div className={`rounded-3xl bg-[#1F2023] p-4 ${view === "list" ? "sm:p-5" : ""}`}>
@@ -278,7 +307,7 @@ function SkinCard({
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-2">
                 <div className="grid h-8 w-8 place-items-center">
-                  <Image src={skin.icon} alt="" width={16} height={16} />
+                  <Image src={iconSrc} alt="" width={16} height={16} />
                 </div>
                 <p className="text-xs font-semibold text-white/80">{skin.floatValue}</p>
               </div>
@@ -287,13 +316,7 @@ function SkinCard({
             </div>
 
             <div className="mt-6 flex justify-center">
-              <Image
-                src={skin.image}
-                alt=""
-                width={220}
-                height={120}
-                className="h-[70px] w-auto object-contain"
-              />
+              <Image src={imageSrc} alt="" width={220} height={120} className="h-[70px] w-auto object-contain" />
             </div>
 
             <div className="mt-6">
@@ -315,7 +338,7 @@ function SkinCard({
         ) : (
           <div className="flex items-center gap-4">
             <div className="relative h-[64px] w-[120px] shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-black/20">
-              <Image src={skin.image} alt="" fill className="object-contain p-2" />
+              <Image src={imageSrc} alt="" fill className="object-contain p-2" />
             </div>
 
             <div className="min-w-0 flex-1">
@@ -338,7 +361,7 @@ function SkinCard({
 
               <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-white/60">
                 <span className="inline-flex items-center gap-2">
-                  <Image src={skin.icon} alt="" width={14} height={14} />
+                  <Image src={iconSrc} alt="" width={14} height={14} />
                   {skin.floatValue}
                 </span>
                 <span className="text-white/30">•</span>
@@ -354,6 +377,31 @@ function SkinCard({
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function SelectSort({
+  value,
+  onChange,
+}: {
+  value: SortKey;
+  onChange: (v: SortKey) => void;
+}) {
+  return (
+    <div className="relative">
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value as SortKey)}
+        className="appearance-none rounded-xl border border-white/10 bg-white/5 px-4 py-2 pr-9 text-sm text-white/85 outline-none transition hover:bg-white/10"
+      >
+        {SORT_OPTIONS.map((o) => (
+          <option key={o.value} value={o.value} className="bg-[#222326]">
+            {o.label}
+          </option>
+        ))}
+      </select>
+      <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-white/40">▾</span>
     </div>
   );
 }
@@ -380,10 +428,7 @@ function Select({
           </option>
         ))}
       </select>
-      <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-white/40">
-        ▾
-      </span>
+      <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-white/40">▾</span>
     </div>
   );
 }
-

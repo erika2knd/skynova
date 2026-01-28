@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useWishlist } from "@/context/wishlist-context";
 import { useRequireAuth } from "@/components/hooks/useRequireAuth";
 
@@ -29,33 +30,52 @@ export default function WishlistIconButton({ slug }: { slug: string }) {
 
   const active = isInWishlist(slug);
 
+  const [busy, setBusy] = useState(false);
+
   return (
     <button
       type="button"
+      disabled={busy}
       onClick={async (e) => {
         e.preventDefault();
         e.stopPropagation();
 
-        // Require auth before wishlist action
-        const ok = await requireAuth();
-        if (!ok) return;
+        if (busy) return;
 
-        toggle(slug);
+        setBusy(true);
+        try {
+          // Require auth before wishlist action
+          const ok = await requireAuth();
+          if (!ok) return;
+
+          await Promise.resolve(toggle(slug)); 
+        } catch (err) {
+          console.error("WishlistIconButton error:", err);
+        } finally {
+          setBusy(false);
+        }
       }}
       aria-label={active ? "Remove from wishlist" : "Add to wishlist"}
       aria-pressed={active}
+      aria-busy={busy}
       title={active ? "Remove from wishlist" : "Add to wishlist"}
       className={[
         "inline-flex h-10 w-10 sm:h-8 sm:w-8 items-center justify-center rounded-full",
         "border border-white/10 bg-white/5 backdrop-blur",
         "transition hover:bg-white/10",
+        "disabled:opacity-60 disabled:cursor-not-allowed",
         active
           ? "text-[#535EFE] shadow-[0_0_18px_rgba(83,94,254,0.35)]"
           : "text-white/60 hover:text-white",
       ].join(" ")}
     >
-      <HeartIcon active={active} />
+      {busy ? (
+        <span className="text-xs leading-none">…</span>
+      ) : (
+        <HeartIcon active={active} />
+      )}
     </button>
   );
 }
+
 

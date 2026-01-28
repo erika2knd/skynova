@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useWishlist } from "@/context/wishlist-context";
 import { useRequireAuth } from "@/components/hooks/useRequireAuth";
 
@@ -8,26 +9,43 @@ export default function ProductWishlistButton({ slug }: { slug: string }) {
   const { requireAuth } = useRequireAuth();
 
   const active = isInWishlist(slug);
+  const [busy, setBusy] = useState(false);
+
+  const label = active ? "Remove from wishlist" : "Add to wishlist";
 
   return (
     <button
       type="button"
+      disabled={busy}
       onClick={async (e) => {
         e.preventDefault();
         e.stopPropagation();
 
-        // Require auth before wishlist action
-        const ok = await requireAuth();
-        if (!ok) return;
+        if (busy) return;
 
-        toggle(slug);
+        setBusy(true);
+        try {
+          const ok = await requireAuth();
+          if (!ok) return;
+
+          await Promise.resolve(toggle(slug));
+        } catch (err) {
+          console.error("ProductWishlistButton error:", err);
+        } finally {
+          setBusy(false);
+        }
       }}
-      className="inline-flex items-center justify-center rounded-2xl border border-white/[0.12] bg-white/5 px-5 py-3 text-sm font-semibold text-white/90 transition hover:bg-white/10"
+      className={[
+        "inline-flex items-center justify-center rounded-2xl border border-white/[0.12] bg-white/5 px-5 py-3",
+        "text-sm font-semibold text-white/90 transition hover:bg-white/10",
+        "disabled:opacity-60 disabled:cursor-not-allowed",
+      ].join(" ")}
       aria-pressed={active}
-      aria-label={active ? "Remove from wishlist" : "Add to wishlist"}
-      title={active ? "Remove from wishlist" : "Add to wishlist"}
+      aria-label={label}
+      title={label}
+      aria-busy={busy}
     >
-      {active ? "Remove from wishlist" : "Add to wishlist"}
+      {busy ? "…" : label}
     </button>
   );
 }

@@ -67,6 +67,12 @@ function mapDemoSkin(s: any): Skin {
   };
 }
 
+function safeImageSrc(src: string | null | undefined, fallback: string) {
+  if (!src) return fallback;
+  const trimmed = String(src).trim();
+  return trimmed ? trimmed : fallback;
+}
+
 function Chip({ children }: { children: React.ReactNode }) {
   return (
     <span className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/80 backdrop-blur">
@@ -85,40 +91,48 @@ function StatRow({ label, value }: { label: string; value: React.ReactNode }) {
 }
 
 async function fetchSkinBySlug(slug: string): Promise<Skin> {
-  // 1) Try DB first
-  const { data, error } = await supabaseAdmin()
-    .from("skins")
-    .select("*")
-    .eq("slug", slug)
-    .maybeSingle<SkinRow>();
+  try {
+    const { data, error } = await supabaseAdmin()
+      .from("skins")
+      .select("*")
+      .eq("slug", slug)
+      .maybeSingle<SkinRow>();
 
-  if (error) {
-    console.error("fetchSkinBySlug DB error:", error);
+    if (error) {
+      console.error("fetchSkinBySlug DB error:", error);
+    }
+
+    if (data) return mapSkin(data);
+  } catch (e) {
+    console.error("fetchSkinBySlug unexpected error:", e);
   }
 
-  if (data) return mapSkin(data);
-
-  // 2) Fallback to demo data (pet-project friendly)
   const fromDemo = demoSkins.find((s: any) => s.slug === slug);
   if (fromDemo) return mapDemoSkin(fromDemo);
 
-  // 3) Still nothing -> 404
   notFound();
 }
 
 async function fetchSimilarItems(category: string, currentSlug: string): Promise<Skin[]> {
-  // Try DB first
-  const { data, error } = await supabaseAdmin()
-    .from("skins")
-    .select("*")
-    .eq("category", category)
-    .neq("slug", currentSlug)
-    .order("created_at", { ascending: false })
-    .limit(6)
-    .returns<SkinRow[]>();
+  try {
+    const { data, error } = await supabaseAdmin()
+      .from("skins")
+      .select("*")
+      .eq("category", category)
+      .neq("slug", currentSlug)
+      .order("created_at", { ascending: false })
+      .limit(6)
+      .returns<SkinRow[]>();
 
-  if (!error && data?.length) {
-    return data.map(mapSkin).slice(0, 4);
+    if (!error && data?.length) {
+      return data.map(mapSkin).slice(0, 4);
+    }
+
+    if (error) {
+      console.error("fetchSimilarItems DB error:", error);
+    }
+  } catch (e) {
+    console.error("fetchSimilarItems unexpected error:", e);
   }
 
   // Fallback to demo data
@@ -137,9 +151,10 @@ export default async function ProductPage({
 }) {
   const { slug } = await params;
 
-  // Next 16+: searchParams can be a Promise
   const sp = (await searchParams) ?? {};
   const currency = sp.currency === "eur" ? "eur" : "usd";
+  const currencyQuery = currency === "eur" ? "?currency=eur" : "";
+
   const rate = currency === "eur" ? 0.92 : 1;
   const symbol = currency === "eur" ? "€" : "$";
 
@@ -152,6 +167,8 @@ export default async function ProductPage({
   const name = `${skin.weapon} | ${skin.skin}`;
   const similar = await fetchSimilarItems(skin.category, skin.slug);
 
+  const mainImage = safeImageSrc(skin.image, "/images/placeholder.png");
+
   return (
     <main className="relative mt-12">
       {/* Decorative glow */}
@@ -161,7 +178,7 @@ export default async function ProductPage({
       <div className="mx-auto max-w-7xl px-6 py-10 lg:px-24 lg:py-14">
         {/* Breadcrumbs */}
         <div className="mb-6 flex flex-wrap items-center gap-2 text-sm text-white/60">
-          <Link href="/marketplace" className="hover:text-white">
+          <Link href={`/marketplace${currencyQuery}`} className="hover:text-white">
             Marketplace
           </Link>
           <span className="text-white/30">/</span>
@@ -182,7 +199,7 @@ export default async function ProductPage({
 
                 <div className="relative mx-auto aspect-[16/9] w-full">
                   <Image
-                    src={skin.image}
+                    src={mainImage}
                     alt={name}
                     fill
                     className="object-contain drop-shadow-[0_18px_40px_rgba(0,0,0,0.45)]"
@@ -191,7 +208,7 @@ export default async function ProductPage({
                 </div>
 
                 <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
-                  <StatRow label="Float" value={skin.floatValue} />
+                  <StatRow label="Float" value={skin.floatValue || "—"} />
                   <StatRow label="Discount" value={`${skin.discount}%`} />
                   <StatRow label="StatTrak" value={skin.statTrak ? "Yes" : "No"} />
                 </div>
@@ -230,7 +247,7 @@ export default async function ProductPage({
               <div className="mt-6 space-y-3">
                 <StatRow label="Exterior" value={skin.exterior} />
                 <StatRow label="Category" value={skin.category} />
-                <StatRow label="Float value" value={skin.floatValue} />
+                <StatRow label="Float value" value={skin.floatValue || "—"} />
                 <StatRow label="StatTrak" value={skin.statTrak ? "Yes" : "No"} />
               </div>
             </div>
@@ -242,64 +259,69 @@ export default async function ProductPage({
           <div className="mb-5 flex items-end justify-between gap-4">
             <h2 className="text-xl font-extrabold text-white sm:text-2xl">Similar items</h2>
 
-            <Link href="/marketplace" className="text-sm font-semibold text-white/70 hover:text-white">
+            <Link
+              href={`/marketplace${currencyQuery}`}
+              className="text-sm font-semibold text-white/70 hover:text-white"
+            >
               Back to Marketplace →
             </Link>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {similar.map((item) => (
-              <Link
-                key={item.slug}
-                href={`/marketplace/${item.slug}${currency === "eur" ? "?currency=eur" : ""}`}
-                className="group block transition-transform hover:scale-[1.01]"
-              >
-                <div className="animated-border rounded-2xl bg-gradient-to-r from-[#535EFE] via-[#680BE2] to-[#535EFE] p-[1px]">
-                  <div className="relative overflow-hidden rounded-2xl bg-[#1F2023] p-4 backdrop-blur">
-                    {/* Hover glow */}
-                    <div className="pointer-events-none absolute inset-0 opacity-0 transition group-hover:opacity-100">
-                      <div className="absolute inset-0 bg-gradient-to-br from-purple-500/15 via-transparent to-indigo-500/15" />
-                    </div>
-
-                    {/* Wishlist */}
-                    <div className="absolute right-3 top-3 z-10">
-                      <WishlistIconButton slug={item.slug} />
-                    </div>
-
-                    {/* Content */}
-                    <div className="relative">
-                      <div className="mb-3 flex items-center gap-2">
-                        {item.statTrak && <Chip>StatTrak™</Chip>}
-                        <Chip>{item.exterior}</Chip>
+            {similar.map((item) => {
+              const itemImage = safeImageSrc(item.image, "/images/placeholder.png");
+              return (
+                <Link
+                  key={item.slug}
+                  href={`/marketplace/${item.slug}${currencyQuery}`}
+                  className="group block transition-transform hover:scale-[1.01]"
+                >
+                  <div className="animated-border rounded-2xl bg-gradient-to-r from-[#535EFE] via-[#680BE2] to-[#535EFE] p-[1px]">
+                    <div className="relative overflow-hidden rounded-2xl bg-[#1F2023] p-4 backdrop-blur">
+                      {/* Hover glow */}
+                      <div className="pointer-events-none absolute inset-0 opacity-0 transition group-hover:opacity-100">
+                        <div className="absolute inset-0 bg-gradient-to-br from-purple-500/15 via-transparent to-indigo-500/15" />
                       </div>
 
-                      <div className="relative mx-auto aspect-[16/10] w-full">
-                        <Image
-                          src={item.image}
-                          alt={`${item.weapon} | ${item.skin}`}
-                          fill
-                          className="object-contain transition duration-300 group-hover:scale-[1.03]"
-                        />
+                      {/* Wishlist */}
+                      <div className="absolute right-3 top-3 z-10">
+                        <WishlistIconButton slug={item.slug} />
                       </div>
 
-                      <div className="mt-4 text-sm font-semibold text-white">
-                        {item.weapon} | {item.skin}
-                      </div>
+                      {/* Content */}
+                      <div className="relative">
+                        <div className="mb-3 flex items-center gap-2">
+                          {item.statTrak && <Chip>StatTrak™</Chip>}
+                          <Chip>{item.exterior}</Chip>
+                        </div>
 
-                      <div className="mt-2 flex items-center justify-between text-sm">
-                        <span className="text-white/80">{money(item.price)}</span>
-                        <span className="text-white/45">Float {item.floatValue}</span>
+                        <div className="relative mx-auto aspect-[16/10] w-full">
+                          <Image
+                            src={itemImage}
+                            alt={`${item.weapon} | ${item.skin}`}
+                            fill
+                            className="object-contain transition duration-300 group-hover:scale-[1.03]"
+                          />
+                        </div>
+
+                        <div className="mt-4 text-sm font-semibold text-white">
+                          {item.weapon} | {item.skin}
+                        </div>
+
+                        <div className="mt-2 flex items-center justify-between text-sm">
+                          <span className="text-white/80">{money(item.price)}</span>
+                          <span className="text-white/45">Float {item.floatValue || "—"}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              </Link>
-            ))}
+                </Link>
+              );
+            })}
           </div>
         </section>
       </div>
     </main>
   );
 }
-
 
