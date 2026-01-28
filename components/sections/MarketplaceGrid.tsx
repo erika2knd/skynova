@@ -242,7 +242,7 @@ export default function MarketplaceGrid({
         </div>
       </div>
 
-      <div className="mt-10 overflow-hidden bg-white/5">
+      <div className="mt-10 mb-24 overflow-hidden bg-white/5">
         <div className="relative h-[280px] w-full">
           <Image src="/images/reviews-bg.png" alt="" fill className="object-cover object-center" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/20 to-black/30" />
